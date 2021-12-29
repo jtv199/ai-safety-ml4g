@@ -21,7 +21,6 @@ standard_transforms = [
     ),
 ]
 
-
 color_correlation_svd_sqrt = np.asarray(
     [
         [0.26, 0.09, 0.02],
