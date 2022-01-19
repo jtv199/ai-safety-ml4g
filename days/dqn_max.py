@@ -1,3 +1,4 @@
+from __future__ import nested_scopes
 from comet_ml import Experiment
 
 import sys
@@ -17,13 +18,12 @@ from einops.layers.torch import Rearrange
 from days.atari_wrappers import AtariWrapper
 
 
-def make_choice(env, eps, net, obs, DEVICE):
+def make_choice(env, eps, net, obs, device):
     if torch.rand(()) < eps:
         return env.action_space.sample()
     else:
         with torch.no_grad():
-            expected_reward = net(
-                torch.tensor(obs, device=DEVICE).unsqueeze(0))
+            expected_reward = net(torch.tensor(obs, device=device).unsqueeze(0))
             return torch.argmax(expected_reward).cpu().numpy()
 
 
@@ -31,52 +31,25 @@ def run_eval_episode(count,
                      env,
                      net,
                      eps,
-                     DEVICE,
-                     experiment=None,
-                     step=None,
+                     device,
                      save=False):
     assert count > 0
-    total_starting_q = 0
-    total_reward = 0
-    total_episode_len = 0
     for _ in range(count):
         obs = env.reset()
-
         video_recorder = None
         if save:
-            video_recorder = gym.wrappers.monitoring.video_recorder.VideoRecorder(
-                env)
-
+            video_recorder = gym.wrappers.monitoring.video_recorder.VideoRecorder(env)
             print()
             print(f"recording to path: {video_recorder.path}")
         with torch.no_grad():
-            total_starting_q += net(
-                torch.tensor(obs,
-                             device=DEVICE).unsqueeze(0)).max().cpu().item()
-
             while True:
                 if video_recorder is not None:
                     video_recorder.capture_frame()
-                obs, reward, done, _ = env.step(
-                    make_choice(env, eps, net, obs, DEVICE))
-                total_reward += reward
-                total_episode_len += 1
+                obs, reward, done, _ = env.step(make_choice(env, eps, net, obs, device))
                 if done:
                     break
         if video_recorder is not None:
             video_recorder.close()
-
-    prefix = "" if count == 1 else "avg "
-    if experiment is not None:
-        experiment.log_metric(f"eval {prefix}episode len",
-                              total_episode_len / count,
-                              step=step)
-        experiment.log_metric(f"eval {prefix}total reward",
-                              total_reward / count,
-                              step=step)
-        experiment.log_metric(f"eval {prefix}starting q",
-                              total_starting_q / count,
-                              step=step)
 
 
 class PixelByteToFloat(nn.Module):
@@ -106,26 +79,13 @@ class DuelingHead(nn.Module):
 
         return adv_v + value_v
 
-@gin.configurable
-def mlp_model(obs_size, action_size, hidden_size):
-    return nn.Sequential(CastToFloat(), nn.Linear(obs_size, hidden_size),
-                         nn.ReLU(), nn.Linear(hidden_size, hidden_size),
-                         nn.ReLU(), dqn_head(hidden_size, action_size))
-
-@gin.configurable
-def dqn_head(hidden_size, action_size, use_dueling, dueling_hidden_size=256):
-    if use_dueling:
-        return DuelingHead(hidden_size, action_size, dueling_hidden_size)
-    else:
-        return nn.Linear(hidden_size, action_size)
-
 
 def atari_model(obs_n_channels, action_size):
     return nn.Sequential(Rearrange("n h w c -> n c h w"), PixelByteToFloat(),
                          nn.Conv2d(obs_n_channels, 32, 8, stride=4), nn.ReLU(),
                          nn.Conv2d(32, 64, 4, stride=2), nn.ReLU(),
                          nn.Conv2d(64, 64, 3, stride=1), nn.ReLU(),
-                         nn.Flatten(), dqn_head(3136, action_size))
+                         nn.Flatten(), nn.Linear(3136, action_size))
 
 
 class CastToFloat(nn.Module):
@@ -136,7 +96,11 @@ class CastToFloat(nn.Module):
         return x.to(torch.float)
 
 
-
+@gin.configurable
+def mlp_model(obs_size, action_size, hidden_size):
+    return nn.Sequential(CastToFloat(), nn.Linear(obs_size, hidden_size),
+                         nn.ReLU(), nn.Linear(hidden_size, hidden_size),
+                         nn.ReLU(), nn.Linear(hidden_size, action_size))
 
 
 def get_linear_fn(start: float, end: float, end_fraction: float):
@@ -163,8 +127,7 @@ def get_linear_fn(start: float, end: float, end_fraction: float):
 
 
 @gin.configurable
-def train_dqn(experiment_name,
-              env_id,
+def train_dqn(env_id,
               gamma,
               steps,
               start_eps,
@@ -174,23 +137,11 @@ def train_dqn(experiment_name,
               train_freq,
               batch_size,
               buffer_size,
-              eval_freq,
-              use_double_dqn,
               multi_step_n,
-              eval_count=1,
               start_training_step=0):
-    # Create an experiment with your api key
-    experiment = Experiment(
-        api_key="gDeuTHDCxQ6xdsXnvzkWsvDEb",
-        project_name="train_dqn",
-        workspace="rgreenblatt",
-        disabled=False,
-    )
-    experiment.set_name(experiment_name)
 
     torch.cuda.init()
     DEVICE = torch.device('cuda:0')
-    # DEVICE = torch.device('cpu')
 
     env = gym.make(env_id)
     eval_env = gym.make(env_id)
@@ -203,30 +154,8 @@ def train_dqn(experiment_name,
         get_net = lambda: mlp_model(prod(env.observation_space.shape), env.
                                     action_space.n)
 
-    if use_double_dqn:
-        nets = [get_net().to(DEVICE) for _ in range(2)]
-        get_params = lambda: itertools.chain(
-            *[net.parameters() for net in nets])
-    else:
-        net = get_net().to(DEVICE)
-        get_params = lambda: net.parameters()
-
-    def both_nets(inp):
-        if use_double_dqn:
-            return (nets[0](inp) + nets[1](inp)) / 2
-        else:
-            return net(inp)
-
-    def split_nets(inp, flip):
-        if use_double_dqn:
-            half_s = inp.size(0) // 2
-            l, r = 0, 1
-            if flip:
-                r, l = l, r
-
-            return torch.concat((nets[l](inp[:half_s]), nets[r](inp[half_s:])))
-        else:
-            return net(inp)
+    net = get_net().to(DEVICE)
+    get_params = lambda: net.parameters()
 
     optim = Adam(get_params(), lr=lr)
     loss_fn = nn.MSELoss()
@@ -235,48 +164,30 @@ def train_dqn(experiment_name,
 
     obs = env.reset()
 
-    with torch.no_grad():
-        starting_q = both_nets(torch.tensor(obs,
-                                            device=DEVICE).unsqueeze(0)).max()
-
     buffer = deque([], maxlen=buffer_size)
-    episode_len = 0
-    total_reward = 0
 
     for step in tqdm(range(steps), disable=False):
         eps = eps_sched(step / steps)
 
-        choice = make_choice(env, eps, both_nets, obs, DEVICE)
+        choice = make_choice(env, eps, net, obs, DEVICE)
         new_obs, reward, done, _ = env.step(choice)
         buffer.append((obs, choice, reward, done))
         obs = new_obs
 
-        episode_len += 1
-        total_reward += reward
-
         if done:
             obs = env.reset()
-            with torch.no_grad():
-                starting_q = both_nets(
-                    torch.tensor(obs, device=DEVICE).unsqueeze(0)).max()
-
-            experiment.log_metric("episode len", episode_len, step=step)
-            experiment.log_metric("total reward", total_reward, step=step)
-            experiment.log_metric("eps", eps, step=step)
-            experiment.log_metric("starting Q", starting_q, step=step)
-
-            episode_len = 0
-            total_reward = 0
 
         if step >= start_training_step and (step + 1) % train_freq == 0:
-            idxs = torch.randperm(len(buffer) - multi_step_n)[:batch_size]
+            idxs = torch.randperm(len(buffer) - multi_step_n)[:batch_size] 
+            # don't sample idxs that are too recent; can't update them yet
 
-            obs_batch = []
+            obs_batch = [] 
             rewards = []
             choices = []
             dones = []
             next_obs = []
 
+            # Probably this could be paralleled
             for idx in idxs:
                 obs_b, choice_b, _, _ = buffer[idx]
                 obs_batch.append(obs_b)
@@ -302,33 +213,20 @@ def train_dqn(experiment_name,
             next_obs = torch.tensor(np.array(next_obs), device=DEVICE)
 
             with torch.no_grad():
-                next_obs_actions = split_nets(next_obs,
-                                              flip=False).argmax(dim=-1)
+                next_obs_actions = net(next_obs).argmax(dim=-1)
                 targets = rewards + dones.logical_not() * (
-                    gamma**multi_step_n * split_nets(next_obs, flip=True)[
+                    gamma**multi_step_n * net(next_obs)[
                         torch.arange(idxs.size(0)), next_obs_actions])
+                # Only include Q(S', A') if not within n of game completion
 
-            actual = split_nets(obs_batch,
-                                flip=False)[torch.arange(idxs.size(0)),
+            actual = net(obs_batch)[torch.arange(idxs.size(0)),
                                             choices]
             loss = loss_fn(targets, actual)
-            experiment.log_metric("loss", loss.cpu().item(), step=step)
             optim.zero_grad()
             loss.backward()
 
             optim.step()
-
-        if (step + 1) % eval_freq == 0:
-            run_eval_episode(eval_count,
-                             eval_env,
-                             both_nets,
-                             eps=0.05,
-                             device=DEVICE,
-                             experiment=experiment,
-                             step=step,
-                             save=False)
-
-    run_eval_episode(1, eval_env, both_nets, eps=0, device=DEVICE, save=True)
+    run_eval_episode(1, eval_env, net, eps=0, device=DEVICE, save=True)
 
 
 def main():
