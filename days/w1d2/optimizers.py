@@ -1,13 +1,10 @@
+"""In this script, we implement 3 optimizers"""
+
 import einops
-import matplotlib.pyplot as plt
-from PIL import Image
-from sklearn.datasets import make_moons
 import torch
 from torch import nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, TensorDataset
-import torchvision
-from torchvision import transforms
+from torch.utils.data import DataLoader
 from typing import Tuple
 import optimizers_tests as tests
 
@@ -32,8 +29,6 @@ def _train(model: nn.Module, dataloader: DataLoader, lr, momentum):
     for X, y in dataloader:
         opt.zero_grad()
         pred = model(X)
-        # print(pred.shape, y.shape)
-        # assert False
         loss = F.l1_loss(pred, y)
         loss.backward()
         opt.step()
@@ -76,6 +71,17 @@ def _opt_rosenbrock(xy, lr, momentum, n_iter):
     return w_history
 
 
+"""
+1. Read the _opt_rosenbrock code. What are the methods in the SGD class?
+2. Why do we have to zero the gradient in pytorch?
+2. Implement zero_grad. In pytorch, to zero a gradient means assigning None.
+3. Implement step.
+    3.1 What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
+    3.2 Separate the cases self.momentum equals zero or not.
+    3.3 Don't forget the 'with torch.no_grad()' context manager.
+"""
+
+
 class _SGD:
     def __init__(
         self, params, lr: float, momentum: float, dampening: float, weight_decay: float
@@ -83,28 +89,55 @@ class _SGD:
         self.params = list(params)
         self.lr = lr
         self.wd = weight_decay
-        self.mu = momentum
-        self.tau = dampening
+        self.momentum = momentum  # here, it's the correct definition of momentum
+        self.dampening = dampening  # generally 1-momentum = 1-dampening
         self.b = [None for _ in self.params]
 
     def zero_grad(self):
         for p in self.params:
             p.grad = None
 
-    def step(self):
+    def step_(self):
         with torch.no_grad():
             for i, p in enumerate(self.params):
                 assert p.grad is not None
                 g = p.grad + self.wd * p
-                if self.mu:
+                if self.momentum:
                     if self.b[i] is not None:
-                        self.b[i] = self.mu * self.b[i] + (1.0 - self.tau) * g
+                        self.b[i] = (
+                            self.momentum * self.b[i] + (1.0 - self.dampening) * g
+                        )
                     else:
                         self.b[i] = g
                     g = self.b[i]
                 p -= self.lr * g
 
+    def step(self):
+        with torch.no_grad():
+            for i, p in enumerate(self.params):
+                assert p.grad is not None
+                naked_update = p.grad + self.wd * p
+                if self.momentum:
+                    if self.b[i] is not None:
+                        update = (
+                            naked_update * (1.0 - self.dampening)
+                            + self.momentum * self.b[i]
+                        )
+                    else:
+                        update = naked_update
+                    self.b[i] = update
+                    p -= self.lr * self.b[i]
+                else:
+                    p -= self.lr * naked_update
 
+"""
+_RMSprop: Using the square of the gradient to adapt the lr
+- What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
+- Update the squared gradient.
+- Why do we use the gradient squared? Why do we say that the lr in _RMSprop is adaptive?
+- eps should be outside the squared root. How would you adapt eps if it were inside?
+- Separate the cases self.momentum zero or not.
+"""
 class _RMSprop:
     def __init__(
         self,
@@ -117,14 +150,13 @@ class _RMSprop:
     ):
         self.params = list(params)
         self.lr = lr
-        self.alpha = alpha
+        self.alpha = alpha # momentum of gradient squared
         self.eps = eps
         self.wd = weight_decay
-        self.mu = momentum
+        self.momentum = momentum
 
-        self.v = [torch.zeros_like(p) for p in self.params]
-        self.b = [torch.zeros_like(p) for p in self.params]
-        self.g_ave = [torch.zeros_like(p) for p in self.params]
+        self.b2 = [torch.zeros_like(p) for p in self.params] # gradient squared
+        self.b = [torch.zeros_like(p) for p in self.params] # gradient
 
     def zero_grad(self):
         for p in self.params:
@@ -135,13 +167,24 @@ class _RMSprop:
             for i, p in enumerate(self.params):
                 assert p.grad is not None
                 g = p.grad + self.wd * p
-                self.v[i] = self.alpha * self.v[i] + (1.0 - self.alpha) * g**2
-                if self.mu:
-                    self.b[i] = self.mu * self.b[i] + g / (self.v[i].sqrt() + self.eps)
+                self.b2[i] = self.alpha * self.b2[i] + (1.0 - self.alpha) * g**2
+                if self.momentum:
+                    self.b[i] = self.momentum * self.b[i] + g / (self.b2[i].sqrt() + self.eps)
                     p -= self.lr * self.b[i]
                 else:
-                    p -= self.lr * g / (self.v[i].sqrt() + self.eps)
+                    p -= self.lr * g / (self.b2[i].sqrt() + self.eps)
 
+
+"""
+Adam, by far the most used optimizer.
+It's a combination of SGD + RMSProps and uses one momentum for the gradient, and another for the gradient squared.
+- update b1, b2 
+- compute b1_hat, b2_hat    
+    - b1_hat = self.b1[i] / (1.0 - self.beta1**self.t)
+    - same for b2_hat
+    - Why this formula?
+- update the gradient
+"""
 
 class _Adam:
     def __init__(
@@ -154,12 +197,12 @@ class _Adam:
     ):
         self.params = list(params)
         self.lr = lr
-        self.beta1, self.beta2 = betas
+        self.beta1, self.beta2 = betas # momenti of b1 and b2
         self.eps = eps
         self.wd = weight_decay
 
-        self.m = [torch.zeros_like(p) for p in self.params]
-        self.v = [torch.zeros_like(p) for p in self.params]
+        self.b1 = [torch.zeros_like(p) for p in self.params]
+        self.b2 = [torch.zeros_like(p) for p in self.params]
         self.t = 0
 
     def zero_grad(self):
@@ -172,12 +215,19 @@ class _Adam:
             for i, p in enumerate(self.params):
                 assert p.grad is not None
                 g = p.grad + self.wd * p
-                self.m[i] = self.beta1 * self.m[i] + (1.0 - self.beta1) * g
-                self.v[i] = self.beta2 * self.v[i] + (1.0 - self.beta2) * g**2
-                mhat = self.m[i] / (1.0 - self.beta1**self.t)
-                vhat = self.v[i] / (1.0 - self.beta2**self.t)
-                p -= self.lr * mhat / (vhat.sqrt() + self.eps)
+                self.b1[i] = self.beta1 * self.b1[i] + (1.0 - self.beta1) * g
+                self.b2[i] = self.beta2 * self.b2[i] + (1.0 - self.beta2) * g**2
+                b1_hat = self.b1[i] / (1.0 - self.beta1**self.t)
+                b2_hat = self.b2[i] / (1.0 - self.beta2**self.t)
+                p -= self.lr * b1_hat / (b2_hat.sqrt() + self.eps)
 
+
+"""
+Bonus: 
+- What is an abstract class in python?
+- Modify the script to use an abstract class.
+- What is a context manager?
+"""
 
 if __name__ == "__main__":
     tests.test_mlp(_MLP)
