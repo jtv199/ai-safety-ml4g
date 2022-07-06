@@ -1,6 +1,6 @@
 """In this script, we implement 3 optimizers
 
-https://blog.paperspace.com/intro-to-optimization-momentum-rmsprop-adam/
+https://towardsdatascience.com/a-visual-explanation-of-gradient-descent-methods-momentum-adagrad-rmsprop-adam-f898b102325c
 """
 
 import einops
