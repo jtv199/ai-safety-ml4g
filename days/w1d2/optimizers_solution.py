@@ -103,7 +103,35 @@ class _SGD:
     def step_(self):
         with torch.no_grad():
             for i, p in enumerate(self.params):
-                ...
+                assert p.grad is not None
+                g = p.grad + self.wd * p
+                if self.momentum:
+                    if self.b[i] is not None:
+                        self.b[i] = (
+                            self.momentum * self.b[i] + (1.0 - self.dampening) * g
+                        )
+                    else:
+                        self.b[i] = g
+                    g = self.b[i]
+                p -= self.lr * g
+
+    def step(self):
+        with torch.no_grad():
+            for i, p in enumerate(self.params):
+                assert p.grad is not None
+                naked_update = p.grad + self.wd * p
+                if self.momentum:
+                    if self.b[i] is not None:
+                        update = (
+                            naked_update * (1.0 - self.dampening)
+                            + self.momentum * self.b[i]
+                        )
+                    else:
+                        update = naked_update
+                    self.b[i] = update
+                    p -= self.lr * self.b[i]
+                else:
+                    p -= self.lr * naked_update
 
 
 """
@@ -143,7 +171,16 @@ class _RMSprop:
     def step(self):
         with torch.no_grad():
             for i, p in enumerate(self.params):
-                ...
+                assert p.grad is not None
+                g = p.grad + self.wd * p
+                self.b2[i] = self.alpha * self.b2[i] + (1.0 - self.alpha) * g**2
+                if self.momentum:
+                    self.b[i] = self.momentum * self.b[i] + g / (
+                        self.b2[i].sqrt() + self.eps
+                    )
+                    p -= self.lr * self.b[i]
+                else:
+                    p -= self.lr * g / (self.b2[i].sqrt() + self.eps)
 
 
 """
@@ -185,7 +222,13 @@ class _Adam:
         self.t += 1
         with torch.no_grad():
             for i, p in enumerate(self.params):
-                ...
+                assert p.grad is not None
+                g = p.grad + self.wd * p
+                self.b1[i] = self.beta1 * self.b1[i] + (1.0 - self.beta1) * g
+                self.b2[i] = self.beta2 * self.b2[i] + (1.0 - self.beta2) * g**2
+                b1_hat = self.b1[i] / (1.0 - self.beta1**self.t)
+                b2_hat = self.b2[i] / (1.0 - self.beta2**self.t)
+                p -= self.lr * b1_hat / (b2_hat.sqrt() + self.eps)
 
 
 """
