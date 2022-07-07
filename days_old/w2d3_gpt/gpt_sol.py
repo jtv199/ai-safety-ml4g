@@ -81,7 +81,6 @@ class GPT2Block(nn.Module):
 
 gpt_tests.test_gpt_block(GPT2Block)    
 
-
 @dataclass
 class GPT2Output:
     logits: TensorType["batch_size", "vocab_size"]
