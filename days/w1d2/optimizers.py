@@ -190,6 +190,7 @@ class _Adam:
 
 """
 Bonus: 
+- Give a reason to use SGD instead of Adam.
 - What is an abstract class in python?
 - Modify the script to use an abstract class.
 - What is a Parent class? Modify the script to use a Parent class
