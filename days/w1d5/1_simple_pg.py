@@ -1,4 +1,15 @@
-"""Solution here: https://github.com/openai/spinningup/blob/master/spinup/algos/pytorch/vpg/vpg.py"""
+"""Original algo here: https://github.com/openai/spinningup/blob/master/spinup/algos/pytorch/vpg/vpg.py
+
+
+Preliminary questions:
+- Explain if __name__ == '__main__': and argparse
+- Run the script with the defaults parameters on the terminal
+- Explain from torch.distributions.categorical import Categorical
+- google gym python, why is it useful?
+- Policy gradient is model based or model free?
+- Is policy gradient on-policy or off-policy?
+- Use https://github.com/patrick-kidger/torchtyping to type the functions
+"""
 # fmt: off
 import torch
 import torch.nn as nn
@@ -30,18 +41,23 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
     n_acts = env.action_space.n
 
     # make core of policy network
+    # What should be the sizes of the layers of the policy network?
     logits_net = mlp(sizes=[obs_dim]+hidden_sizes+[n_acts])
 
     # make function to compute action distribution
+    # What is the shape of obs?
     def get_policy(obs):
         logits = logits_net(obs)
         return Categorical(logits=logits)
 
     # make action selection function (outputs int actions, sampled from policy)
+    # What is the shape of obs?
     def get_action(obs):
         return get_policy(obs).sample().item()
 
     # make loss function whose gradient, for the right data, is policy gradient
+    # What does the weights parameter represents here?
+    # What is the shape of obs?
     def compute_loss(obs, act, weights):
         logp = get_policy(obs).log_prob(act)
         return -(logp * weights).mean()
@@ -55,11 +71,11 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
         batch_obs = []          # for observations
         batch_acts = []         # for actions
         batch_weights = []      # for R(tau) weighting in policy gradient
-        batch_rets = []         # for measuring episode returns
+        batch_rets = []         # for measuring episode returns # What is the return?
         batch_lens = []         # for measuring episode lengths
 
         # reset episode-specific variables
-        obs = env.reset()       # first obs comes from starting distribution
+        obs = env.reset()       # first obs comes from starting distribution 
         done = False            # signal from environment that episode is over
         ep_rews = []            # list for rewards accrued throughout ep
 
@@ -91,6 +107,7 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
                 batch_lens.append(ep_len)
 
                 # the weight for each logprob(a|s) is R(tau)
+                # Why don't we just do 'batch_weights += ep_rews'?
                 batch_weights += [ep_ret] * ep_len
 
                 # reset episode-specific variables
