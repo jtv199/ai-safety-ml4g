@@ -24,11 +24,6 @@ import gym
 from gym.spaces import Discrete, Box
 
 
-from torch import rand
-from torchtyping import TensorType, patch_typeguard
-from typeguard import typechecked
-
-
 def mlp(sizes, activation=nn.Tanh, output_activation=nn.Identity):
     # Build a feedforward neural network.
     layers = []
@@ -56,23 +51,20 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
 
     # make function to compute action distribution
     # What is the shape of obs?
-    @typechecked
-    def get_policy(obs: TensorType[..., obs_dim]):
+    def get_policy(obs):
         # Warning: obs has not always the same shape.
         logits = logits_net(obs)
         return Categorical(logits=logits)
 
     # make action selection function (outputs int actions, sampled from policy)
     # What is the shape of obs?
-    @typechecked
-    def get_action(obs: TensorType[obs_dim]) -> float:
+    def get_action(obs):
         return get_policy(obs).sample().item()
 
     # make loss function whose gradient, for the right data, is policy gradient
     # What does the weights parameter represents here?
     # What is the shape of obs?
-    @typechecked
-    def compute_loss(obs: TensorType["b", obs_dim], act: TensorType["b"], weights: TensorType["b"]):
+    def compute_loss(obs, act, weights):
         logp = get_policy(obs).log_prob(act)
         return -(logp * weights).mean()
 
