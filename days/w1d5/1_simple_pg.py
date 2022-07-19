@@ -8,7 +8,11 @@ Preliminary questions:
 - google gym python, why is it useful?
 - Policy gradient is model based or model free?
 - Is policy gradient on-policy or off-policy?
-- Use https://github.com/patrick-kidger/torchtyping to type the functions
+
+Read all the code, then:
+- Use https://github.com/patrick-kidger/torchtyping to type the functions get_policy, get_action and compute_loss
+- Use from typeguard import typechecked and the @typechecked decorator to check the previous question.
+- Answer the questions
 """
 # fmt: off
 import torch
@@ -18,6 +22,12 @@ from torch.optim import Adam
 import numpy as np
 import gym
 from gym.spaces import Discrete, Box
+
+
+from torch import rand
+from torchtyping import TensorType, patch_typeguard
+from typeguard import typechecked
+
 
 def mlp(sizes, activation=nn.Tanh, output_activation=nn.Identity):
     # Build a feedforward neural network.
@@ -46,19 +56,23 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
 
     # make function to compute action distribution
     # What is the shape of obs?
-    def get_policy(obs):
+    @typechecked
+    def get_policy(obs: TensorType[..., obs_dim]):
+        # Warning: obs has not always the same shape.
         logits = logits_net(obs)
         return Categorical(logits=logits)
 
     # make action selection function (outputs int actions, sampled from policy)
     # What is the shape of obs?
-    def get_action(obs):
+    @typechecked
+    def get_action(obs: TensorType[obs_dim]) -> float:
         return get_policy(obs).sample().item()
 
     # make loss function whose gradient, for the right data, is policy gradient
     # What does the weights parameter represents here?
     # What is the shape of obs?
-    def compute_loss(obs, act, weights):
+    @typechecked
+    def compute_loss(obs: TensorType["b", obs_dim], act: TensorType["b"], weights: TensorType["b"]):
         logp = get_policy(obs).log_prob(act)
         return -(logp * weights).mean()
 
@@ -107,7 +121,7 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
                 batch_lens.append(ep_len)
 
                 # the weight for each logprob(a|s) is R(tau)
-                # Why don't we just do 'batch_weights += ep_rews'?
+                # Why do we use a constant vector here?
                 batch_weights += [ep_ret] * ep_len
 
                 # reset episode-specific variables
