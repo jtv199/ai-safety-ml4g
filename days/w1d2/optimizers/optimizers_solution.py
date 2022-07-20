@@ -1,9 +1,13 @@
 """In this script, we implement 3 optimizers
 
+Rad this article:
 https://towardsdatascience.com/a-visual-explanation-of-gradient-descent-methods-momentum-adagrad-rmsprop-adam-f898b102325c
+
+Then try to implement them here.
+
+Some details are omitted, there is little chance that you will pass the tests. So read the solution after 5 minutes of try & error
 """
 
-import einops
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -75,10 +79,11 @@ def _opt_rosenbrock(xy, lr, momentum, n_iter):
 
 
 """
-1. Read the _opt_rosenbrock code. What are the methods in the SGD class?
-2. Why do we have to zero the gradient in pytorch?
+0. Read the _opt_rosenbrock code. What are the methods used in an optimizer class?
+1. Why do we have to zero the gradient in pytorch?
 2. Implement zero_grad. In pytorch, to zero a gradient means assigning None.
 3. Implement step.
+    3.0 Why enumerate is a cool function in python?
     3.1 What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
     3.2 Separate the cases self.momentum equals zero or not.
     3.3 Don't forget the 'with torch.no_grad()' context manager.
@@ -100,7 +105,7 @@ class _SGD:
         for p in self.params:
             p.grad = None
 
-    def step_(self):
+    def step(self):
         with torch.no_grad():
             for i, p in enumerate(self.params):
                 assert p.grad is not None
@@ -114,24 +119,6 @@ class _SGD:
                         self.b[i] = g
                     g = self.b[i]
                 p -= self.lr * g
-
-    def step(self):
-        with torch.no_grad():
-            for i, p in enumerate(self.params):
-                assert p.grad is not None
-                naked_update = p.grad + self.wd * p
-                if self.momentum:
-                    if self.b[i] is not None:
-                        update = (
-                            naked_update * (1.0 - self.dampening)
-                            + self.momentum * self.b[i]
-                        )
-                    else:
-                        update = naked_update
-                    self.b[i] = update
-                    p -= self.lr * self.b[i]
-                else:
-                    p -= self.lr * naked_update
 
 
 """
@@ -233,18 +220,13 @@ class _Adam:
 
 """
 Bonus: 
+- Give a reason to use SGD instead of Adam.
 - What is an abstract class in python?
 - Modify the script to use an abstract class.
-- What is a Parent class? Modify the script to use a Parent class
-- What is a context manager?
+- What is a Parent class? Modify the script to use a Parent class 
 """
 
 if __name__ == "__main__":
-    tests.test_mlp(_MLP)
-    tests.test_train(_train)
-    tests.test_accuracy(_accuracy)
-    tests.test_evaluate(_evaluate)
-    tests.test_rosenbrock(_opt_rosenbrock)
     tests.test_sgd(_SGD)
     tests.test_rmsprop(_RMSprop)
     tests.test_adam(_Adam)

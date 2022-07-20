@@ -28,9 +28,19 @@ def _check_equal(tensor1, tensor2):
         print("Your module returns different results from the example solution.")
 
 
+
+def name_function(func):
+    def timed(*args, **kwargs):
+        print('Executing', func.__name__, "...")
+        result = func(*args, **kwargs)
+        print("")
+        return result
+    return timed
+
+
 ############################################################################
 
-
+@name_function
 def test_mlp(MLP):
     x = torch.randn(128, 2)
     torch.manual_seed(534)
@@ -41,7 +51,7 @@ def test_mlp(MLP):
 
     _check_equal(mlp(x), _mlp(x))
 
-
+@name_function
 def test_train(train):
     torch.manual_seed(928)
     lr = 0.1
@@ -61,7 +71,7 @@ def test_train(train):
     x = torch.randn(128, 2)
     _check_equal(trained_model(x), _trained_model(x))
 
-
+@name_function
 def test_accuracy(accuracy):
     dl = _get_moon_data(unsqueeze_y=True)
     model = sol._MLP(2, 32, 1)
@@ -71,7 +81,7 @@ def test_accuracy(accuracy):
     acc = accuracy(model, dl)
     _check_equal(torch.Tensor([_acc]), torch.Tensor([acc]))
 
-
+@name_function
 def test_evaluate(evaluate):
     torch.manual_seed(928)
     X = torch.rand(512, 2)
@@ -83,7 +93,6 @@ def test_evaluate(evaluate):
     _loss = sol._evaluate(model, dl)
     loss = evaluate(model, dl)
     _check_equal(torch.Tensor([_loss]), torch.Tensor([loss]))
-
 
 def test_rosenbrock(opt_rosenbrock):
     test_cases = [
@@ -114,7 +123,7 @@ def _train_with_opt(model, opt):
         loss.backward()
         opt.step()
 
-
+@name_function
 def test_sgd(SGD):
     test_cases = [
         dict(lr=0.1, momentum=0.0, dampening=0.0, weight_decay=0.0),
@@ -139,7 +148,7 @@ def test_sgd(SGD):
         print("\nTesting configuration: ", opt_config)
         _check_equal(w0_correct, w0_submitted)
 
-
+@name_function
 def test_rmsprop(RMSprop):
     test_cases = [
         dict(lr=0.1, alpha=0.9, eps=0.001, weight_decay=0.0, momentum=0.0),
@@ -163,7 +172,7 @@ def test_rmsprop(RMSprop):
         print("\nTesting configuration: ", opt_config)
         _check_equal(w0_correct, w0_submitted)
 
-
+@name_function
 def test_adam(Adam):
     test_cases = [
         dict(lr=0.1, betas=(0.8, 0.95), eps=0.001, weight_decay=0.0),
