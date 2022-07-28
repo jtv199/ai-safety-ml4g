@@ -108,15 +108,7 @@ class _SGD:
     def step(self):
         with torch.no_grad():
             for i, p in enumerate(self.params):
-                grad = p.grad + self.wd * p
-                if self.momentum:
-                    if self.b[i] is not None:
-                        self.b[i] = self.b[i] * self.momentum + grad * self.dampening
-                    else:
-                        self.b[i] = grad  # * self.dampening
-                    p -= self.lr * self.b[i]
-                else:
-                    p -= grad
+                ...
 
 
 """
