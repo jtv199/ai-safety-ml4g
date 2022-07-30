@@ -22,4 +22,4 @@ Second week: Start of the project
 - w2d3 - Beginning of the work in groups of 2
 
 
-The original redwood mlab focuses mainly on the ML engineering part. In comparison, we will spend more time on conceptual aspects.
+We draw inspiration from the redwood mlab, which focuses mainly on the ML engineering part. In comparison, we will spend more time on conceptual aspects.
