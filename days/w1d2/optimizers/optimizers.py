@@ -3,9 +3,15 @@
 Rad this article:
 https://towardsdatascience.com/a-visual-explanation-of-gradient-descent-methods-momentum-adagrad-rmsprop-adam-f898b102325c
 
+
 Then try to implement them here.
 
 Some details are omitted, there is little chance that you will pass the tests. So read the solution after 5 minutes of try & error
+
+Bonus for maths people:
+- https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization
+- https://optimization.cbe.cornell.edu/index.php?title=AdaGrad
+
 """
 
 import torch
