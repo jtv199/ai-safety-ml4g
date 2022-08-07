@@ -1,12 +1,13 @@
-"""In this script, we implement 3 optimizers
+"""In this script, we implement 3 optimizers. We will optimize https://en.wikipedia.org/wiki/Rosenbrock_function which is a benchmark problem in optimization.
 
-Rad this article:
+Read this article:
 https://towardsdatascience.com/a-visual-explanation-of-gradient-descent-methods-momentum-adagrad-rmsprop-adam-f898b102325c
 
+Warning: Notations in the article are not the same as here. Try to forget about the article when doing this TP. Just infer what has to be done from the __init__ and the questions.
 
 Then try to implement them here.
 
-Some details are omitted, there is little chance that you will pass the tests. So read the solution after 5 minutes of try & error
+Some details are omitted, there is little chance that you will pass the tests which will compare your implementation with Pytorch's implementation, but that's ok. So read the solution after 5 minutes of try & error
 
 Bonus for maths people:
 - https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization
@@ -15,55 +16,8 @@ Bonus for maths people:
 """
 
 import torch
-from torch import nn
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
 from typing import Tuple
 import optimizers_tests as tests
-
-
-class _MLP(nn.Module):
-    def __init__(self, in_dim: int, hidden_dim: int, out_dim: int):
-        super().__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(in_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, out_dim),
-        )
-
-    def forward(self, x):
-        return self.layers(x)
-
-
-def _train(model: nn.Module, dataloader: DataLoader, lr, momentum):
-    opt = torch.optim.SGD(model.parameters(), lr, momentum)
-    for X, y in dataloader:
-        opt.zero_grad()
-        pred = model(X)
-        loss = F.l1_loss(pred, y)
-        loss.backward()
-        opt.step()
-    return model
-
-
-def _accuracy(model: nn.Module, dataloader: DataLoader):
-    n_correct = 0
-    n_total = 0
-    for X, y in dataloader:
-        n_correct += (model(X).argmax(1) == y).sum().item()
-        n_total += len(y)
-    return n_correct / n_total
-
-
-def _evaluate(model: nn.Module, dataloader: DataLoader):
-    sum_abs = 0.0
-    n_elems = 0
-    for X, y in dataloader:
-        sum_abs += (model(X) - y).abs().sum()
-        n_elems += y.shape[0] * y.shape[1]
-    return sum_abs / n_elems
 
 
 def _rosenbrock(x, y, a=1, b=100):
@@ -85,14 +39,19 @@ def _opt_rosenbrock(xy, lr, momentum, n_iter):
 
 
 """
-0. Read the _opt_rosenbrock code. What are the methods used in an optimizer class?
-1. Why do we have to zero the gradient in pytorch?
-2. Implement zero_grad. In pytorch, to zero a gradient means assigning None.
+SGD:
+0. Read the _opt_rosenbrock code.
+1. Why do we have to zero the gradient in PyTorch? Why do we use the word 'stochastic' in 'Stochastic gradient descent' in the context of deep learning?
+2. Below, read the method zero_grad. You can note that in PyTorch, to zero a gradient means assigning None.
 3. Implement step.
-    3.0 Why enumerate is a cool function in python?
-    3.1 What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
+    - Why do we need self.b in the __init__?
+    - weight_decay: What is the formula of the update when there is some weight_decay (aka we penalize each parameter squared)? Assume wd absorbs the constant.
+        Tip: let's say we optimize L(X, y) = (ax_1 + bx_2 + c - y)^2 with respect to a, b and c.
+        Adding weight_decay means that instead of minimizing L, we minimize g(X, y) =  L(X, y) + wd(a^2 + b^2 + c^2)/2
+        For this example, what is the formula of the gradient wrt a,b and c?
     3.2 Separate the cases self.momentum equals zero or not.
-    3.3 Don't forget the 'with torch.no_grad()' context manager.
+    3.3 Why do we need the 'with torch.no_grad()' context manager?
+4. There are multiple ways to implement SGD, so don't panic if there is some ambiguity and look at the solution to compare with the PyTorch implementation when you have used every variable.
 """
 
 
@@ -118,6 +77,7 @@ class _SGD:
 
 
 """
+Bonus:
 _RMSprop: Using the square of the gradient to adapt the lr
 - What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
 - Update the squared gradient.
@@ -144,8 +104,8 @@ class _RMSprop:
         self.wd = weight_decay
         self.momentum = momentum
 
-        self.b2 = [torch.zeros_like(p) for p in self.params]  # gradient squared
-        self.b = [torch.zeros_like(p) for p in self.params]  # gradient
+        self.b2 = [torch.zeros_like(p) for p in self.params]  # gradient squared estimate
+        self.b = [torch.zeros_like(p) for p in self.params]  # gradient estimate
 
     def zero_grad(self):
         for p in self.params:
@@ -158,7 +118,7 @@ class _RMSprop:
 
 
 """
-Adam, by far the most used optimizer.
+Bonus: Adam, by far the most used optimizer.
 It's a combination of SGD + RMSProps and uses one momentum for the gradient, and another for the gradient squared.
 - update b1, b2 
 - compute b1_hat, b2_hat    
@@ -204,7 +164,6 @@ Bonus:
 - Give a reason to use SGD instead of Adam.
 - What is an abstract class in python?
 - Modify the script to use an abstract class.
-- What is a Parent class? Modify the script to use a Parent class 
 """
 
 if __name__ == "__main__":
