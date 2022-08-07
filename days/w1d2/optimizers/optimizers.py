@@ -16,8 +16,55 @@ Bonus for maths people:
 """
 
 import torch
+from torch import nn
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
 from typing import Tuple
 import optimizers_tests as tests
+
+
+class _MLP(nn.Module):
+    def __init__(self, in_dim: int, hidden_dim: int, out_dim: int):
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(in_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, out_dim),
+        )
+
+    def forward(self, x):
+        return self.layers(x)
+
+
+def _train(model: nn.Module, dataloader: DataLoader, lr, momentum):
+    opt = torch.optim.SGD(model.parameters(), lr, momentum)
+    for X, y in dataloader:
+        opt.zero_grad()
+        pred = model(X)
+        loss = F.l1_loss(pred, y)
+        loss.backward()
+        opt.step()
+    return model
+
+
+def _accuracy(model: nn.Module, dataloader: DataLoader):
+    n_correct = 0
+    n_total = 0
+    for X, y in dataloader:
+        n_correct += (model(X).argmax(1) == y).sum().item()
+        n_total += len(y)
+    return n_correct / n_total
+
+
+def _evaluate(model: nn.Module, dataloader: DataLoader):
+    sum_abs = 0.0
+    n_elems = 0
+    for X, y in dataloader:
+        sum_abs += (model(X) - y).abs().sum()
+        n_elems += y.shape[0] * y.shape[1]
+    return sum_abs / n_elems
 
 
 def _rosenbrock(x, y, a=1, b=100):
@@ -39,19 +86,26 @@ def _opt_rosenbrock(xy, lr, momentum, n_iter):
 
 
 """
+Generalities:
+Read the _opt_rosenbrock code.
+Why do we have to zero the gradient in PyTorch? 
+Why do we use the word 'stochastic' in 'Stochastic gradient descent' in the context of deep learning?
+
 SGD:
-0. Read the _opt_rosenbrock code.
-1. Why do we have to zero the gradient in PyTorch? Why do we use the word 'stochastic' in 'Stochastic gradient descent' in the context of deep learning?
-2. Below, read the method zero_grad. You can note that in PyTorch, to zero a gradient means assigning None.
-3. Implement step.
-    - Why do we need self.b in the __init__?
-    - weight_decay: What is the formula of the update when there is some weight_decay (aka we penalize each parameter squared)? Assume wd absorbs the constant.
+Please don't look back at the article. We will try to construct the formula ourself here.
+Below, read the method zero_grad. You can note that in PyTorch, to zero a gradient means assigning None.
+Implement step:
+    - Implement the most basic version of SGD possible
+    - Why do we need self.b in the __init__? Add momentum
+    - weight_decay: What is the formula of the update when there is some weight_decay (ie when we penalize each parameter squared)? Assume wd absorbs the constant.
         Tip: let's say we optimize L(X, y) = (ax_1 + bx_2 + c - y)^2 with respect to a, b and c.
         Adding weight_decay means that instead of minimizing L, we minimize g(X, y) =  L(X, y) + wd(a^2 + b^2 + c^2)/2
         For this example, what is the formula of the gradient wrt a,b and c?
-    3.2 Separate the cases self.momentum equals zero or not.
-    3.3 Why do we need the 'with torch.no_grad()' context manager?
-4. There are multiple ways to implement SGD, so don't panic if there is some ambiguity and look at the solution to compare with the PyTorch implementation when you have used every variable.
+        In the code, at the beginning of the step function, replace the gradient by g = p.grad + self.wd * p
+    - Separate the cases self.momentum equals zero or not.
+    - Why do we need the 'with torch.no_grad()' context manager?
+
+There are multiple ways to implement SGD, so don't panic if there is some ambiguity and look at the solution to compare with the PyTorch implementation when you have used every variable.
 """
 
 
@@ -77,12 +131,12 @@ class _SGD:
 
 
 """
-Bonus:
 _RMSprop: Using the square of the gradient to adapt the lr
+(Bonus. Do Adam first!):
 - What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
 - Update the squared gradient.
 - Why do we use the gradient squared? Why do we say that the lr in _RMSprop is adaptive?
-- eps should be outside the squared root. How would you adapt eps if it were inside?
+- eps should be outside the squared root
 - Separate the cases self.momentum zero or not.
 """
 
@@ -104,7 +158,9 @@ class _RMSprop:
         self.wd = weight_decay
         self.momentum = momentum
 
-        self.b2 = [torch.zeros_like(p) for p in self.params]  # gradient squared estimate
+        self.b2 = [
+            torch.zeros_like(p) for p in self.params
+        ]  # gradient squared estimate
         self.b = [torch.zeros_like(p) for p in self.params]  # gradient estimate
 
     def zero_grad(self):
@@ -118,14 +174,26 @@ class _RMSprop:
 
 
 """
-Bonus: Adam, by far the most used optimizer.
-It's a combination of SGD + RMSProps and uses one momentum for the gradient, and another for the gradient squared.
-- update b1, b2 
-- compute b1_hat, b2_hat    
-    - b1_hat = self.b1[i] / (1.0 - self.beta1**self.t)
-    - same for b2_hat
-    - Why this formula?
-- update the gradient
+Adam, by far the most used optimizer.
+
+It's a combination of SGD+RMSProps and uses one momentum for the gradient, and another for the gradient squared.
+
+1. Adam
+sum_of_gradient = previous_sum_of_gradient * beta1 + gradient * (1 - beta1) [SGD+Momentum]
+sum_of_gradient_squared = previous_sum_of_gradient_squared * beta2 + gradient² * (1- beta2) [RMSProp]
+delta = -learning_rate * sum_of_gradient / sqrt(sum_of_gradient_squared)
+Update the gradient
+
+2. More stability + regularization
+Add self.eps to the denominator, outside the square root.
+At the beginning of the step function, replace the gradient by g = p.grad + self.wd * p
+
+3. Adam + Correction
+In the __init__, self.b1 and self.b2 are a list of zeros, so we need a correction:
+In the update, use a correction: b1_hat = self.b1[i] / (1.0 - self.beta1**self.t)
+Same for b2_hat
+
+Try to pass the tests.
 """
 
 
@@ -144,6 +212,8 @@ class _Adam:
         self.eps = eps
         self.wd = weight_decay
 
+        # sum_of_gradient for each param
+        # & sum_of_gradient_squared for each param
         self.b1 = [torch.zeros_like(p) for p in self.params]
         self.b2 = [torch.zeros_like(p) for p in self.params]
         self.t = 0
@@ -163,7 +233,9 @@ class _Adam:
 Bonus: 
 - Give a reason to use SGD instead of Adam.
 - What is an abstract class in python?
-- Modify the script to use an abstract class.
+- Modify the script to add an abstract class.
+- What is a Parent class? Modify the script to use a Parent class 
+
 """
 
 if __name__ == "__main__":
