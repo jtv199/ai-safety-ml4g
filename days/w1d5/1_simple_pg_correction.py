@@ -64,15 +64,16 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
     # make action selection function (outputs int actions, sampled from policy)
     # What is the shape of obs?
     @typechecked
-    def get_action(obs: TensorType[obs_dim]) -> float:
+    def get_action(obs: TensorType[obs_dim]) -> int:
         return get_policy(obs).sample().item()
 
     # make loss function whose gradient, for the right data, is policy gradient
     # What does the weights parameter represents here?
     # What is the shape of obs?
+    # Answer: b here is the sum of the len of each episode.
     @typechecked
     def compute_loss(obs: TensorType["b", obs_dim], act: TensorType["b"], weights: TensorType["b"]):
-        logp = get_policy(obs).log_prob(act)
+        logp : TensorType["b"] = get_policy(obs).log_prob(act)
         return -(logp * weights).mean()
 
     # make optimizer
