@@ -42,7 +42,18 @@ def policy_evaluation(P, R, policy, gamma=0.9, tol=1e-2):
     Ns, Na = R.shape
     # ====================================================
     # YOUR IMPLEMENTATION HERE
-    value_function = ...
+    value_function = np.zeros(Ns)
+
+    r = np.array([R[s, policy[s]] for s in range(Ns)])
+    Ppi = np.zeros((Ns, Ns))
+    for s in range(Ns):
+        for s_next in range(Ns):
+            Ppi[s, s_next] = P[s, policy[s], s_next]
+
+    A = np.eye(Ns) - gamma * Ppi
+    r = r[np.newaxis].T
+    value_function = np.matmul(np.linalg.inv(A), r)
+
     # ====================================================
     return value_function
 
@@ -70,7 +81,23 @@ def policy_iteration(P, R, gamma=0.9, tol=1e-3):
     policy = np.zeros(Ns, dtype=np.int)
     # ====================================================
     # YOUR IMPLEMENTATION HERE
-    ...
+    #
+    new_policy = -np.ones(Ns, dtype=np.int)
+    i = 0
+    while not np.array_equal(new_policy, policy):
+        i += 1
+
+        policy = new_policy.copy()
+        V = policy_evaluation(P, R, policy, gamma, tol)
+
+        # greedy iteration
+        for s in range(Ns):
+            new_policy[s] = np.argmax(
+                [
+                    R[s, a] + gamma * sum([P[s, a, s_] * V[s_] for s_ in range(Ns)])
+                    for a in range(Na)
+                ]
+            )
 
     print("Policy iteration terminated in ", i, " iterations.")
     # ====================================================
@@ -99,8 +126,27 @@ def value_iteration(P, R, gamma=0.9, tol=1e-3):
     Qfs = [Q]
     # ====================================================
     # YOUR IMPLEMENTATION HERE
+    #
+    new_Q = -np.ones((Ns, Na))
+    i = 0
+    while np.max(np.abs(new_Q - Q)) > tol:
+        i += 1
+        Q = np.copy(new_Q)
+        for s in range(Ns):
+            for a in range(Na):
+                new_Q[s, a] = R[s, a] + (
+                    gamma
+                    * sum(
+                        [
+                            P[s, a, s_] * max([Q[s_, a] for a in range(Na)])
+                            for s_ in range(Ns)
+                        ]
+                    )
+                )
+        Qfs.append(new_Q)
+    print("value_iteration terminated with ", i, " iterations")
 
-    greedy_policy = ...
+    greedy_policy = np.argmax(Qfs[-1], axis=1)
 
     # ====================================================
     return Q, greedy_policy, Qfs
@@ -133,7 +179,6 @@ if __name__ == "__main__":
     # ====================================================
     # YOUR IMPLEMENTATION HERE
     # compute value function of the greedy policy
-    #
     greedy_V = policy_evaluation(env.P, env.R, VI_greedypol, env.gamma, tol)
 
     # ====================================================
