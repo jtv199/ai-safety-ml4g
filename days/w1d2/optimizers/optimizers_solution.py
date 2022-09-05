@@ -122,55 +122,6 @@ class _SGD:
 
 
 """
-_RMSprop: Using the square of the gradient to adapt the lr
-- What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
-- Update the squared gradient.
-- Why do we use the gradient squared? Why do we say that the lr in _RMSprop is adaptive?
-- eps should be outside the squared root. How would you adapt eps if it were inside?
-- Separate the cases self.momentum zero or not.
-"""
-
-
-class _RMSprop:
-    def __init__(
-        self,
-        params,
-        lr: float,
-        alpha: float,
-        eps: float,
-        weight_decay: float,
-        momentum: float,
-    ):
-        self.params = list(params)
-        self.lr = lr
-        self.alpha = alpha  # momentum of gradient squared
-        self.eps = eps
-        self.wd = weight_decay
-        self.momentum = momentum
-
-        self.b2 = [torch.zeros_like(p) for p in self.params]  # gradient squared
-        self.b = [torch.zeros_like(p) for p in self.params]  # gradient
-
-    def zero_grad(self):
-        for p in self.params:
-            p.grad = None
-
-    def step(self):
-        with torch.no_grad():
-            for i, p in enumerate(self.params):
-                assert p.grad is not None
-                g = p.grad + self.wd * p
-                self.b2[i] = self.alpha * self.b2[i] + (1.0 - self.alpha) * g**2
-                if self.momentum:
-                    self.b[i] = self.momentum * self.b[i] + g / (
-                        self.b2[i].sqrt() + self.eps
-                    )
-                    p -= self.lr * self.b[i]
-                else:
-                    p -= self.lr * g / (self.b2[i].sqrt() + self.eps)
-
-
-"""
 Adam, by far the most used optimizer.
 It's a combination of SGD + RMSProps and uses one momentum for the gradient, and another for the gradient squared.
 - update b1, b2 
@@ -219,6 +170,55 @@ class _Adam:
 
 
 """
+(Bonus) _RMSprop: Using the square of the gradient to adapt the lr
+- What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
+- Update the squared gradient.
+- Why do we use the gradient squared? Why do we say that the lr in _RMSprop is adaptive?
+- eps should be outside the squared root. How would you adapt eps if it were inside?
+- Separate the cases self.momentum zero or not.
+"""
+
+
+class _RMSprop:
+    def __init__(
+        self,
+        params,
+        lr: float,
+        alpha: float,
+        eps: float,
+        weight_decay: float,
+        momentum: float,
+    ):
+        self.params = list(params)
+        self.lr = lr
+        self.alpha = alpha  # momentum of gradient squared
+        self.eps = eps
+        self.wd = weight_decay
+        self.momentum = momentum
+
+        self.b2 = [torch.zeros_like(p) for p in self.params]  # gradient squared
+        self.b = [torch.zeros_like(p) for p in self.params]  # gradient
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = None
+
+    def step(self):
+        with torch.no_grad():
+            for i, p in enumerate(self.params):
+                assert p.grad is not None
+                g = p.grad + self.wd * p
+                self.b2[i] = self.alpha * self.b2[i] + (1.0 - self.alpha) * g**2
+                if self.momentum:
+                    self.b[i] = self.momentum * self.b[i] + g / (
+                        self.b2[i].sqrt() + self.eps
+                    )
+                    p -= self.lr * self.b[i]
+                else:
+                    p -= self.lr * g / (self.b2[i].sqrt() + self.eps)
+
+
+"""
 Bonus: 
 - Give a reason to use SGD instead of Adam.
 - What is an abstract class in python?
@@ -228,5 +228,5 @@ Bonus:
 
 if __name__ == "__main__":
     tests.test_sgd(_SGD)
-    tests.test_rmsprop(_RMSprop)
     tests.test_adam(_Adam)
+    tests.test_rmsprop(_RMSprop)

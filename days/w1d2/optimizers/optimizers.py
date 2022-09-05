@@ -118,50 +118,7 @@ class _SGD:
         self.wd = weight_decay
         self.momentum = momentum  # here, it's the correct definition of momentum
         self.dampening = dampening  # Tip: replace 1-momentum by 1-dampening
-        self.b = [None for _ in self.params]
-
-    def zero_grad(self):
-        for p in self.params:
-            p.grad = None
-
-    def step(self):
-        with torch.no_grad():
-            for i, p in enumerate(self.params):
-                ...
-
-
-"""
-_RMSprop: Using the square of the gradient to adapt the lr
-(Bonus. Do Adam first!):
-- What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
-- Update the squared gradient.
-- Why do we use the gradient squared? Why do we say that the lr in _RMSprop is adaptive?
-- eps should be outside the squared root
-- Separate the cases self.momentum zero or not.
-"""
-
-
-class _RMSprop:
-    def __init__(
-        self,
-        params,
-        lr: float,
-        alpha: float,
-        eps: float,
-        weight_decay: float,
-        momentum: float,
-    ):
-        self.params = list(params)
-        self.lr = lr
-        self.alpha = alpha  # momentum of gradient squared
-        self.eps = eps
-        self.wd = weight_decay
-        self.momentum = momentum
-
-        self.b2 = [
-            torch.zeros_like(p) for p in self.params
-        ]  # gradient squared estimate
-        self.b = [torch.zeros_like(p) for p in self.params]  # gradient estimate
+        self.b = [None for _ in self.params]  # last gradient
 
     def zero_grad(self):
         for p in self.params:
@@ -230,6 +187,48 @@ class _Adam:
 
 
 """
+(Bonus) _RMSprop: Using the square of the gradient to adapt the lr
+- What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
+- Update the squared gradient.
+- Why do we use the gradient squared? Why do we say that the lr in _RMSprop is adaptive?
+- eps should be outside the squared root
+- Separate the cases self.momentum zero or not.
+"""
+
+
+class _RMSprop:
+    def __init__(
+        self,
+        params,
+        lr: float,
+        alpha: float,
+        eps: float,
+        weight_decay: float,
+        momentum: float,
+    ):
+        self.params = list(params)
+        self.lr = lr
+        self.alpha = alpha  # momentum of gradient squared
+        self.eps = eps
+        self.wd = weight_decay
+        self.momentum = momentum
+
+        self.b2 = [
+            torch.zeros_like(p) for p in self.params
+        ]  # gradient squared estimate
+        self.b = [torch.zeros_like(p) for p in self.params]  # gradient estimate
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = None
+
+    def step(self):
+        with torch.no_grad():
+            for i, p in enumerate(self.params):
+                ...
+
+
+"""
 Bonus: 
 - Give a reason to use SGD instead of Adam.
 - What is an abstract class in python?
@@ -240,5 +239,5 @@ Bonus:
 
 if __name__ == "__main__":
     tests.test_sgd(_SGD)
-    tests.test_rmsprop(_RMSprop)
     tests.test_adam(_Adam)
+    tests.test_rmsprop(_RMSprop)
