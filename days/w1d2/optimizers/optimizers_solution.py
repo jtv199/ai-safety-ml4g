@@ -108,17 +108,18 @@ class _SGD:
     def step(self):
         with torch.no_grad():
             for i, p in enumerate(self.params):
-                assert p.grad is not None
+                assert p.grad is not None, "Don't forget loss.backward()!"
+                # weight decay
                 g = p.grad + self.wd * p
-                if self.momentum:
-                    if self.b[i] is not None:
-                        self.b[i] = (
-                            self.momentum * self.b[i] + (1.0 - self.dampening) * g
-                        )
-                    else:
-                        self.b[i] = g
-                    g = self.b[i]
-                p -= self.lr * g
+
+                # momentum
+                if self.b[i]:
+                    self.b[i] = self.momentum * self.b[i] + (1 - self.dampening) * g
+                else:
+                    self.b[i] = g
+
+                # learning rate
+                p -= self.b[i] * self.lr
 
 
 """

@@ -13,6 +13,8 @@ Bonus for maths people:
 - https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization
 - https://optimization.cbe.cornell.edu/index.php?title=AdaGrad
 
+
+Tip: Press Alt+Z for automatic line return.
 """
 
 import torch
@@ -94,16 +96,18 @@ Why do we use the word 'stochastic' in 'Stochastic gradient descent' in the cont
 SGD:
 Please don't look back at the article. We will try to construct the formula ourself here.
 Below, read the method zero_grad. You can note that in PyTorch, to zero a gradient means assigning None.
-Implement step:
+
+We will implement successively the pure SGD, the sgd with weight decay, and the SGD with momentum. Momentum, weight_decay, and update with learning rate must be modular operation. Warning: These modules must not mix on common lines of code.
+
+Implement steps:
     - Implement the most basic version of SGD possible
-    - Why do we need self.b in the __init__? Add momentum
+    - Why do we need the 'with torch.no_grad()' context manager?
     - weight_decay: What is the formula of the update when there is some weight_decay (ie when we penalize each parameter squared)? Assume wd absorbs the constant.
         Tip: let's say we optimize L(X, y) = (ax_1 + bx_2 + c - y)^2 with respect to a, b and c.
         Adding weight_decay means that instead of minimizing L, we minimize g(X, y) =  L(X, y) + wd(a^2 + b^2 + c^2)/2
         For this example, what is the formula of the gradient wrt a,b and c?
         In the code, at the beginning of the step function, replace the gradient by g = p.grad + self.wd * p
-    - Separate the cases self.momentum equals zero or not.
-    - Why do we need the 'with torch.no_grad()' context manager?
+    - Momentum: Why do we need self.b in the __init__? Add momentum. Separate the cases self.momentum equals zero or not.
 
 There are multiple ways to implement SGD, so don't panic if there is some ambiguity and look at the solution to compare with the PyTorch implementation when you have used every variable.
 """
@@ -136,6 +140,7 @@ Adam, by far the most used optimizer.
 It's a combination of SGD+RMSProps and uses one momentum for the gradient, and another for the gradient squared.
 
 1. Adam
+Tip: There is no if condition in Adam because beta1 and beta2 are always stricly positive.
 sum_of_gradient = previous_sum_of_gradient * beta1 + gradient * (1 - beta1) [SGD+Momentum]
 sum_of_gradient_squared = previous_sum_of_gradient_squared * beta2 + gradient² * (1- beta2) [RMSProp]
 delta = -learning_rate * sum_of_gradient / sqrt(sum_of_gradient_squared)
