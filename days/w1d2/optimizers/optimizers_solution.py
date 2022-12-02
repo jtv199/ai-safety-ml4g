@@ -79,14 +79,28 @@ def _opt_rosenbrock(xy, lr, momentum, n_iter):
 
 
 """
-0. Read the _opt_rosenbrock code. What are the methods used in an optimizer class?
-1. Why do we have to zero the gradient in pytorch?
-2. Implement zero_grad. In pytorch, to zero a gradient means assigning None.
-3. Implement step.
-    3.0 Why enumerate is a cool function in python?
-    3.1 What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
-    3.2 Separate the cases self.momentum equals zero or not.
-    3.3 Don't forget the 'with torch.no_grad()' context manager.
+Generalities:
+Read the _opt_rosenbrock code.
+Why do we have to zero the gradient in PyTorch? 
+Why do we use the word 'stochastic' in 'Stochastic gradient descent' in the context of deep learning?
+
+SGD:
+Please don't look back at the article. We will try to construct the formula ourself here.
+Below, read the method zero_grad. You can note that in PyTorch, to zero a gradient means assigning None.
+
+We will implement successively the pure SGD, the sgd with weight decay, and the SGD with momentum. Momentum, weight_decay, and update with learning rate must be modular operation. Warning: These modules must not mix on common lines of code.
+
+Implement steps:
+    - # update: Implement the most basic version of SGD possible
+    - Why do we need the 'with torch.no_grad()' context manager?
+    - # weight_decay: What is the formula of the update when there is some weight_decay (ie when we penalize each parameter squared)? Assume wd absorbs the constant.
+        Tip: let's say we optimize L(X, y) = (ax_1 + bx_2 + c - y)^2 with respect to a, b and c.
+        Adding weight_decay means that instead of minimizing L, we minimize g(X, y) =  L(X, y) + wd(a^2 + b^2 + c^2)/2
+        For this example, what is the formula of the gradient wrt a,b and c?
+        In the code, at the beginning of the step function, replace the gradient by g = p.grad + self.wd * p
+    - # momentum: Why do we need self.b in the __init__? Add momentum. Separate the cases self.momentum equals zero or not.
+
+There are multiple ways to implement SGD, so don't panic if there is some ambiguity and look at the solution to compare with the PyTorch implementation when you have used every variable.
 """
 
 
@@ -118,19 +132,35 @@ class _SGD:
                 else:
                     self.b[i] = g
 
-                # learning rate
+                # update
                 p -= self.b[i] * self.lr
 
 
 """
 Adam, by far the most used optimizer.
-It's a combination of SGD + RMSProps and uses one momentum for the gradient, and another for the gradient squared.
-- update b1, b2 
-- compute b1_hat, b2_hat    
-    - b1_hat = self.b1[i] / (1.0 - self.beta1**self.t)
-    - same for b2_hat
-    - Why this formula?
-- update the gradient
+
+It's a combination of SGD+RMSProps and uses one momentum for the gradient, and another for the gradient squared.
+
+1. Adam
+Tip: There is no if condition in Adam because beta1 and beta2 are always stricly positive.
+sum_of_gradient = previous_sum_of_gradient * beta1 + gradient * (1 - beta1) [SGD+Momentum]
+sum_of_gradient_squared = previous_sum_of_gradient_squared * beta2 + gradient² * (1- beta2) [RMSProp]
+delta = -learning_rate * sum_of_gradient / sqrt(sum_of_gradient_squared)
+Update the gradient
+
+2. More stability + regularization
+Add self.eps to the denominator, outside the square root.
+At the beginning of the step function, replace the gradient by g = p.grad + self.wd * p
+
+3. Adam + Correction
+In the __init__, self.b1 and self.b2 are a list of zeros, so we need a correction:
+In the update, use a correction: b1_hat = self.b1[i] / (1.0 - self.beta1**self.t)
+Generally beta1 = 0.9, and beta2 = 0.999.
+Same for b2_hat.
+NB: The correction is important only at the beginning of the optimization process (self.t small).
+The the correction is needed because self.b1 and self.b2 are initialized at zero.
+
+Try to pass the tests.
 """
 
 
@@ -175,7 +205,7 @@ class _Adam:
 - What is the formula of the update when there is some weight_decay? Assume wd absorbs the constant.
 - Update the squared gradient.
 - Why do we use the gradient squared? Why do we say that the lr in _RMSprop is adaptive?
-- eps should be outside the squared root. How would you adapt eps if it were inside?
+- eps should be outside the squared root
 - Separate the cases self.momentum zero or not.
 """
 

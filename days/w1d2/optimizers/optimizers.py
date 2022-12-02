@@ -100,14 +100,14 @@ Below, read the method zero_grad. You can note that in PyTorch, to zero a gradie
 We will implement successively the pure SGD, the sgd with weight decay, and the SGD with momentum. Momentum, weight_decay, and update with learning rate must be modular operation. Warning: These modules must not mix on common lines of code.
 
 Implement steps:
-    - Implement the most basic version of SGD possible
+    - # update: Implement the most basic version of SGD possible
     - Why do we need the 'with torch.no_grad()' context manager?
-    - weight_decay: What is the formula of the update when there is some weight_decay (ie when we penalize each parameter squared)? Assume wd absorbs the constant.
+    - # weight_decay: What is the formula of the update when there is some weight_decay (ie when we penalize each parameter squared)? Assume wd absorbs the constant.
         Tip: let's say we optimize L(X, y) = (ax_1 + bx_2 + c - y)^2 with respect to a, b and c.
         Adding weight_decay means that instead of minimizing L, we minimize g(X, y) =  L(X, y) + wd(a^2 + b^2 + c^2)/2
         For this example, what is the formula of the gradient wrt a,b and c?
         In the code, at the beginning of the step function, replace the gradient by g = p.grad + self.wd * p
-    - Momentum: Why do we need self.b in the __init__? Add momentum. Separate the cases self.momentum equals zero or not.
+    - # momentum: Why do we need self.b in the __init__? Add momentum. Separate the cases self.momentum equals zero or not.
 
 There are multiple ways to implement SGD, so don't panic if there is some ambiguity and look at the solution to compare with the PyTorch implementation when you have used every variable.
 """
@@ -120,7 +120,7 @@ class _SGD:
         self.params = list(params)
         self.lr = lr
         self.wd = weight_decay
-        self.momentum = momentum  # here, it's the correct definition of momentum
+        self.momentum = momentum
         self.dampening = dampening  # Tip: replace 1-momentum by 1-dampening
         self.b = [None for _ in self.params]  # last gradient
 
@@ -131,7 +131,15 @@ class _SGD:
     def step(self):
         with torch.no_grad():
             for i, p in enumerate(self.params):
+                # weight decay
                 ...
+
+                # momentum
+                ...
+
+                # update
+                ...
+
 
 
 """
@@ -153,7 +161,10 @@ At the beginning of the step function, replace the gradient by g = p.grad + self
 3. Adam + Correction
 In the __init__, self.b1 and self.b2 are a list of zeros, so we need a correction:
 In the update, use a correction: b1_hat = self.b1[i] / (1.0 - self.beta1**self.t)
-Same for b2_hat
+Generally beta1 = 0.9, and beta2 = 0.999.
+Same for b2_hat.
+NB: The correction is important only at the beginning of the optimization process (self.t small).
+The the correction is needed because self.b1 and self.b2 are initialized at zero.
 
 Try to pass the tests.
 """
