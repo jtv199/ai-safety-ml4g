@@ -236,7 +236,7 @@ if MAIN:
 
 Most of the work in training a neural network is getting the data in top condition first. The relevant saying is "garbage in, garbage out".
 
-Implement `preprocess_image` to do the following:
+The `preprocess_image` function do the following:
 
 - Use `transforms.ToTensor()(img)` to obtain a tensor of shape `(channels, height, width)`.
 - Remove the fourth (alpha) channel if present and just use the first three channels which are R, G, B values.
@@ -244,6 +244,7 @@ Implement `preprocess_image` to do the following:
 - Build a tensor of the corresponding RGB values and scale each color to the range `[-1, 1]`. These will be the labels.
 - Return the inputs and labels wrapped in a `TensorDataset`.
 
+Execute the following cell, and make sure you understand what is happening:
 
 ```python
 def all_coordinates_scaled(height: int, width: int) -> t.Tensor:
@@ -251,7 +252,9 @@ def all_coordinates_scaled(height: int, width: int) -> t.Tensor:
 
     The range of x and y should be from [-1, 1] in both height and width dimensions.
     """
-    pass
+    xs = repeat(t.arange(width, dtype=t.float32), "w -> (h w)", h=height) / width
+    ys = repeat(t.arange(height, dtype=t.float32), "h -> (h w)", w=width) / height
+    return t.stack((xs, ys), dim=1) * 2.0 - 1.0
 
 
 def preprocess_image(img: Image.Image) -> TensorDataset:
@@ -261,7 +264,11 @@ def preprocess_image(img: Image.Image) -> TensorDataset:
     input: shape (num_pixels, 2)
     label: shape (num_pixels, 3)
     """
-    pass
+    img_t = transforms.ToTensor()(img)[:3, :, :]
+    _, height, width = img_t.shape
+    X = all_coordinates_scaled(height, width)
+    labels = rearrange(img_t, "c h w -> (h w) c") * 2.0 - 1.0
+    return TensorDataset(X, labels)
 
 ```
 
@@ -298,27 +305,9 @@ if MAIN:
 
 Many times, I've made errors in the preprocessing step and not noticed because my model still trains and learns anyway, just at a lower accuracy than was possible. One way to reduce the chance of this happening is to inspect the preprocessed data carefully to see if it still makes sense.
 
-Make a zero tensor of shape `(height, width, 3)` representing the grid of pixels, write your training data into it, and display it with `plt.imshow`.
+We make a zero tensor of shape `(height, width, 3)` representing the grid of pixels, that we display with `plt.imshow`.
 
-Hint: there are two different ways you can write the data into your grid without using a `for` loop.
-
-<details>
-
-<summary>Spoiler - How to Write the Data</summary>
-
-There's a special case in the indexing code that allows you to write `grid[y_coords, x_coords] = Y` where `x_coords` and `y_coords` are both of shape `(num_pixels,)`. This PyTorch behavior is the same as NumPy, and you can read about it in the [NumPy docs](https://numpy.org/doc/stable/user/basics.indexing.html#integer-array-indexing).
-
-Another good way is to transform the height and width into a single `pixel` coordinate, `view` your grid as shape `(pixel, channels)`, and then do a regular indexing to write to the `view`.
-</details>
-
-<details>
-
-<summary>My grid looks mostly right, except for some black stripes of all zeros!</summary>
-
-Did you use `.long()` or `.to(torch.int64)` to make your coordinates integers? Due to floating point error, you might have something like `x=39.99` and `long()` would convert this to 39 while the intended result is 40. In this case you can just add 0.5 first so it rounds to the nearest integer.
-
-</details>
-
+Execute the following cell:
 
 ```python
 def to_grid(X: t.Tensor, Y: t.Tensor, width: int, height: int) -> t.Tensor:
@@ -329,12 +318,18 @@ def to_grid(X: t.Tensor, Y: t.Tensor, width: int, height: int) -> t.Tensor:
 
     Return: shape (height, width, channels=3)
     """
-    pass
+    X = ((X + 1.0) / 2.0 * t.tensor([width, height]) + 0.5).long()
+    x_coords = X[:, 0]
+    y_coords = X[:, 1]
+    Y = (Y + 1.0) / 2.0
+    grid = t.zeros((height, width, 3))
+    grid[y_coords, x_coords] = Y
+    return grid
 
 
 if MAIN:
-    (width, height) = img.size
-    (X, Y) = train_data.tensors
+    width, height = img.size
+    X, Y = train_data.tensors
     plt.figure()
     plt.imshow(to_grid(X, Y, width, height))
 
@@ -399,58 +394,72 @@ def train_one_epoch(model: ImageMemorizer, dataloader: DataLoader) -> float:
 if MAIN:
     w1d4_part1_test.test_train(train_one_epoch)
 
-```
 
-Write an evaluate function which calculates the average L1 loss on the provided dataloader.
-
-Tip: since you don't need gradients for this step, wrap your forward call in the `with torch.inference_mode()` context to avoid unnecessary computation.
-
-
-```python
 def evaluate(model: ImageMemorizer, dataloader: DataLoader) -> float:
     """Return the total L1 loss over the provided data divided by the number of examples."""
-    pass
-
+    model.to(device)
+    model.eval()  # Does nothing on this particular model, but good practice to have it
+    with t.inference_mode():
+        sum_loss = 0.0
+        n_elems = 0
+        for X, y in dataloader:
+            sum_loss += F.l1_loss(model(X.to(device)), y.to(device)).item() * len(X)
+            n_elems += len(X)
+        return sum_loss / n_elems
 
 if MAIN:
     w1d4_part1_test.test_evaluate(evaluate)
 
 ```
 
-Create a model with 400 neurons in each hidden layer and train it for an epoch.
+The following cell creates a model with 400 neurons in each hidden layer and trains it for an epoch.
 
 If no errors appeared, do a few more epochs and plot the training loss and validation loss over time as a function of number of epochs. Compute the validation loss using your `evaluate` function. I was able to reach a validation loss below 0.2 after 40 epochs. Your image might be easier or harder to learn.
 
-Set up your model in this cell, initializing the `ImageMemorizer` class.
-
 
 ```python
 if MAIN:
-    "TODO: YOUR CODE HERE"
+    model = ImageMemorizer(2, 400, 3)
+    train_losses = []
+    val_losses = []
+    
+    num_epochs = 1
+    bar = tqdm(range(num_epochs))
+    for epoch in bar:
+        train_losses.append(train_one_epoch(model, train_loader))
+        val_loss = evaluate(model, val_loader)
+        bar.set_description(f"val loss: {val_loss:.3f}")
+        bar.refresh()
+        val_losses.append(val_loss)
+
+    fig, ax = plt.subplots()
+    ax.plot(train_losses, label="Training loss")
+    ax.plot(val_losses, label="Validation loss")
+    ax.set(xlabel="Epochs", ylabel="L1 Loss")
+    fig.legend()
 
 ```
 
-1. Train your model in the cell below. Write it so that you can re-run this cell to continue training the model and appending to lists of train/val losses, instead of starting from scratch each time. Remember that you can use `tqdm` to view your progress across epochs.
-
-2. Write code to plot the L1 training loss and validation loss across epochs.
-
+Finally, execute this cell to display the image your network has memorized:
 
 ```python
 if MAIN:
-    "TODO: YOUR CODE HERE"
+    X = all_coordinates_scaled(height, width)
+    with t.inference_mode():
+        Y = model(X.to(device)).cpu()
+    grid = to_grid(X, Y, width, height)
+    grid.clip_(0, 1)
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.imshow(grid)
+    ax.get_xaxis().set_visible(False)
+    ax.get_yaxis().set_visible(False)
+
+    # ax.set_position([0, 0, 1, 1])
+    # fig.savefig("w1d4_vangogh_solution.jpg")
 
 ```
 
-Finally, in the cell below, write code to display the image your network has memorized by passing all possible `(x, y)` coordinates through the network and using `to_grid` from earlier to prepare the output for `imshow`. Note that your network may have produced outputs beyond the valid range: you can use `torch.clip` to truncate these to the proper `[0.0, 1.0]` range for `imshow`.
-
-
-```python
-if MAIN:
-    "TODO: YOUR CODE HERE"
-
-```
-
-Share your image in Slack if you like it! Here's the one my network learned:
+Share your image with your friends if you like it! Here's the one my network learned:
 
 <p align="center">
     <img src="w1d4_vangogh_solution.jpg" width=300/>
@@ -602,39 +611,6 @@ if MAIN:
 
 ```
 
-### RMSprop
-
-
-```python
-class RMSprop:
-    def __init__(
-        self,
-        params: Iterable[t.nn.parameter.Parameter],
-        lr: float,
-        alpha: float,
-        eps: float,
-        weight_decay: float,
-        momentum: float,
-    ):
-        """Implements RMSprop.
-
-        Like the PyTorch version, but assumes centered=False
-            https://pytorch.org/docs/stable/generated/torch.optim.RMSprop.html#torch.optim.RMSprop
-
-        """
-        pass
-
-    def zero_grad(self) -> None:
-        pass
-
-    def step(self) -> None:
-        pass
-
-
-if MAIN:
-    w1d4_part1_test.test_rmsprop(RMSprop)
-
-```
 
 ### Adam
 
