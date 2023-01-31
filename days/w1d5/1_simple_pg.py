@@ -23,6 +23,11 @@ import numpy as np
 import gym
 from gym.spaces import Discrete, Box
 
+from torchtyping import TensorType, patch_typeguard
+from typeguard import typechecked
+
+patch_typeguard()  # use before @typechecked
+
 
 def mlp(sizes, activation=nn.Tanh, output_activation=nn.Identity):
     # Build a feedforward neural network.
@@ -62,11 +67,10 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
         return get_policy(obs).sample().item()
 
     # make loss function whose gradient, for the right data, is policy gradient
-    # What does the weights parameter represents here?
-    # What is the shape of obs?
-    def compute_loss(obs, act, weights):
-        logp = get_policy(obs).log_prob(act)
-        return -(logp * weights).mean()
+    @typechecked
+    def compute_loss(obs: TensorType["b", obs_dim], act: TensorType["b"], weights: TensorType["b"]):
+        """TODO"""
+        ...
 
     # make optimizer
     optimizer = Adam(logits_net.parameters(), lr=lr)

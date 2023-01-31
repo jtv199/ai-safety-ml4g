@@ -24,8 +24,10 @@ import gym
 from gym.spaces import Discrete, Box
 
 
-from torchtyping import TensorType
+from torchtyping import TensorType, patch_typeguard
 from typeguard import typechecked
+
+patch_typeguard()  # use before @typechecked
 
 
 def mlp(sizes, activation=nn.Tanh, output_activation=nn.Identity):
