@@ -70,6 +70,7 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
     @typechecked
     def compute_loss(obs: TensorType["b", obs_dim], act: TensorType["b"], weights: TensorType["b"]):
         """TODO"""
+        # Help: weights is a vector piecewise constant containing the total reward of each episode.
         ...
 
     # make optimizer
