@@ -52,10 +52,6 @@ We will be using [Visual Studio Code](https://code.visualstudio.com/) as the off
 - If you're having trouble writing a batched computation, try doing the unbatched version first.
 - If you find these exercises challenging, it would be beneficial to go through them a second time so they feel more natural.
 
-## Support
-
-At some point you'll be added to a MLAB Slack and be able to ask questions there. If you need help before then, feel free to email `chris` at `rdwrs.com` directly.
-
 
 ```python
 import math
