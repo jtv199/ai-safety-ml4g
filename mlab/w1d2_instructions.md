@@ -13,58 +13,58 @@ The ResNet we'll build today is no longer state of the art, but you'll find resi
 
 - [Readings](#readings)
 - [Inference Using a Pre-Trained ResNet](#inference-using-a-pre-trained-resnet)
-    - [Gotcha 1 - Training vs Eval Mode](#gotcha----training-vs-eval-mode)
-    - [Gotcha 2 - Input Normalization](#gotcha----input-normalization)
-    - [Gotcha 3 - no_grad / inference_mode](#gotcha----nograd--inferencemode)
-    - [The `tqdm` library](#the-tqdm-library)
+  - [Gotcha 1 - Training vs Eval Mode](#gotcha----training-vs-eval-mode)
+  - [Gotcha 2 - Input Normalization](#gotcha----input-normalization)
+  - [Gotcha 3 - no_grad / inference_mode](#gotcha----nograd--inferencemode)
+  - [The `tqdm` library](#the-tqdm-library)
 - [Loading and Caching Images](#loading-and-caching-images)
 - [Torchvision Transforms](#torchvision-transforms)
 - [Image Preprocessing](#image-preprocessing)
 - [ImageNet Class Names](#imagenet-class-names)
 - [Making Predictions (pretrained model)](#making-predictions-pretrained-model)
 - [Practice with `einsum` and `as_strided`](#practice-with-einsum-and-asstrided)
-    - [Trace of a matrix](#trace-of-a-matrix)
-    - [Matrix Multiplication](#matrix-multiplication)
-    - [PyTorch's `conv1d` Exercises](#pytorchs-convd-exercises)
-    - [Your Own `conv1d`](#your-own-convd)
-    - [Your Own `conv2d`](#your-own-convd)
-    - [Padding a Tensor](#padding-a-tensor)
-    - [Padding and Stride for `conv1d`](#padding-and-stride-for-convd)
-    - [Helper functions for pairs](#helper-functions-for-pairs)
-    - [Padding and Stride for `conv2d`](#padding-and-stride-for-convd)
+  - [Trace of a matrix](#trace-of-a-matrix)
+  - [Matrix Multiplication](#matrix-multiplication)
+  - [PyTorch's `conv1d` Exercises](#pytorchs-convd-exercises)
+  - [Your Own `conv1d`](#your-own-convd)
+  - [Your Own `conv2d`](#your-own-convd)
+  - [Padding a Tensor](#padding-a-tensor)
+  - [Padding and Stride for `conv1d`](#padding-and-stride-for-convd)
+  - [Helper functions for pairs](#helper-functions-for-pairs)
+  - [Padding and Stride for `conv2d`](#padding-and-stride-for-convd)
 - [Max Pooling](#max-pooling)
-    - [Module version](#module-version)
-    - [Constructor](#constructor)
-    - [extra_repr](#extrarepr)
+  - [Module version](#module-version)
+  - [Constructor](#constructor)
+  - [extra_repr](#extrarepr)
 - [Linear Module](#linear-module)
-    - [Initialization](#initialization)
+  - [Initialization](#initialization)
 - [`Conv2d` - nn.Module version](#convd---nnmodule-version)
 - [Batch Normalization](#batch-normalization)
-    - [Train and Eval Modes](#train-and-eval-modes)
+  - [Train and Eval Modes](#train-and-eval-modes)
 - [ReLU Module](#relu-module)
 - [Sequential](#sequential)
 - [Flatten](#flatten)
 - [ResNet Average Pooling](#resnet-average-pooling)
 - [Assembling ResNet](#assembling-resnet)
-    - [Residual Block](#residual-block)
-    - [BlockGroup](#blockgroup)
-    - [ResNet34](#resnet)
+  - [Residual Block](#residual-block)
+  - [BlockGroup](#blockgroup)
+  - [ResNet34](#resnet)
 - [Copying Pretrained Weights](#copying-pretrained-weights)
 - [Running Your Model](#running-your-model)
 - [Training ResNet on CIFAR10](#training-resnet-on-cifar)
-    - [Preparing the CIFAR10 Data](#preparing-the-cifar-data)
-    - [Train your ResNet](#train-your-resnet)
-    - [Test Your ResNet](#test-your-resnet)
+  - [Preparing the CIFAR10 Data](#preparing-the-cifar-data)
+  - [Train your ResNet](#train-your-resnet)
+  - [Test Your ResNet](#test-your-resnet)
 - [Bonus](#bonus)
-    - [Fused BatchNorm and Conv2d](#fused-batchnorm-and-convd)
-    - [Deeper Look at Initialization](#deeper-look-at-initialization)
-    - [Residual Block Identity Initialization](#residual-block-identity-initialization)
-    - [Data Augmentation](#data-augmentation)
-    - [ReLU Benchmarking](#relu-benchmarking)
-    - [Negative Strides](#negative-strides)
-    - [Adversarial Examples](#adversarial-examples)
-    - [Build Your Own Dtype Support](#build-your-own-dtype-support)
-    - [Benchmarking Inference Mode](#benchmarking-inference-mode)
+  - [Fused BatchNorm and Conv2d](#fused-batchnorm-and-convd)
+  - [Deeper Look at Initialization](#deeper-look-at-initialization)
+  - [Residual Block Identity Initialization](#residual-block-identity-initialization)
+  - [Data Augmentation](#data-augmentation)
+  - [ReLU Benchmarking](#relu-benchmarking)
+  - [Negative Strides](#negative-strides)
+  - [Adversarial Examples](#adversarial-examples)
+  - [Build Your Own Dtype Support](#build-your-own-dtype-support)
+  - [Benchmarking Inference Mode](#benchmarking-inference-mode)
 
 ## Readings
 
@@ -103,7 +103,6 @@ If you've seen `with t.no_grad():` before, `inference_mode` is a newer feature (
 ### The `tqdm` library
 
 The [tqdm](https://pypi.org/project/tqdm/) library provides nice progress bars so you can see how long operations are going to take. It's very easy to use - just wrap your iterable in `tqdm()`. I recommend using `tqdm` for everything in the course that takes more than a couple seconds to run.
-
 
 ```python
 import json
@@ -145,7 +144,6 @@ We've provided some sample images; feel free to call `download_image` some URLs 
 This usually means the image format isn't supported on your OS and version of the image library. You can try manually converting the image to a common format like JPEG, or just use another image.
 
 </details>
-
 
 ```python
 IMAGE_FOLDER = Path("./w1d2_images")
@@ -195,7 +193,6 @@ Find the normalization constants in the [documentation](https://pytorch.org/visi
 
 It's always a good idea to visualize your data after preprocessing to catch any errors, and get a feeling for what the model "sees". You can use [`plt.imshow`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html) to display a tensor as an image, but you'll need to `rearrange` the data to the format it expects.
 
-
 ```python
 preprocess: Callable[[Image.Image], t.Tensor]
 preprocess = transforms.Compose(["your code here"])
@@ -205,7 +202,6 @@ preprocess = transforms.Compose(["your code here"])
 ## Image Preprocessing
 
 Implement `prepare_data` below.
-
 
 ```python
 def prepare_data(images: list[Image.Image]) -> t.Tensor:
@@ -225,7 +221,6 @@ If you haven't encountered ImageNet before, spend a minute looking at the variou
 
 Some of the labels are duplicates for no apparent reason: "laptop computer" is a different category than "notebook computer" and "projectile, missile" is different from "missile". Another issue with the problem setting is that when more than one label truly applies, the model has to infer which one the human labeller had in mind. For example, a scene with a typical desktop PC can contain "desktop computer", "desk", "mouse", "monitor", and "computer keyboard" categories but the labeller would have only specified one of these.
 
-
 ```python
 with open("w1d2_imagenet_labels.json") as f:
     imagenet_labels = list(json.load(f).values())
@@ -235,7 +230,6 @@ with open("w1d2_imagenet_labels.json") as f:
 ## Making Predictions (pretrained model)
 
 Implement `predict` below and call it with your images. Remember the gotcha discussed above.
-
 
 ```python
 def predict(model, images: list[Image.Image], print_topk_preds=3) -> list[int]:
@@ -262,11 +256,9 @@ Now instead of using torchvision's code for ResNet, we're going to implement our
 
 If you didn't do the pre-exercises on `as_strided`, it might be worth doing those now. Note that `x.as_strided(...)` is a method equivalent to `torch.as_strided(x, ...)`
 
-
 ### Trace of a matrix
 
 Implement the following functions.
-
 
 ```python
 def einsum_trace(a: t.Tensor) -> t.Tensor:
@@ -311,12 +303,12 @@ B = \begin{bmatrix}c_1 && c_2 && c_3 \end{bmatrix}$$
 Where $r_1$ and $r_2$ are row vectors and $c_1$, $c_2$, and $c_3$ are column vectors. All of these vectors should have the same length.
 
 $$A_{repeated} = \begin{bmatrix}
-	r_1 && r_1 && r_1 \\
-	r_2 && r_2 && r_2 \\
+ r_1 && r_1 && r_1 \\
+ r_2 && r_2 && r_2 \\
 \end{bmatrix}$$
 $$B_{repeated} = \begin{bmatrix}
-	c_1 && c_2 && c_3 \\
-	c_1 && c_2 && c_3 \\
+ c_1 && c_2 && c_3 \\
+ c_1 && c_2 && c_3 \\
 \end{bmatrix}$$
 
 $A_{repeated}$ and $B_{repeated}$ are both 3-tensors. You can imagine the $r$ and $c$ vectors as "going into the page" if that's helpful.
@@ -324,8 +316,8 @@ $A_{repeated}$ and $B_{repeated}$ are both 3-tensors. You can imagine the $r$ an
 These vectors are now lined up to do elementwise dot products to get the product of the original matrices.
 
 $$A \times B = \begin{bmatrix}
-	r_1 \cdot c_1 && r_1 \cdot c_2 && r_1 \cdot c_3 \\
-	r_2 \cdot c_1 && r_2 \cdot c_2 && r_2 \cdot c_3 \\
+ r_1 \cdot c_1 && r_1 \cdot c_2 && r_1 \cdot c_3 \\
+ r_2 \cdot c_1 && r_2 \cdot c_2 && r_2 \cdot c_3 \\
 \end{bmatrix}$$
 
 </details>
@@ -340,7 +332,6 @@ You can use a stride of 0 in as_strided to repeat along that dimension.
 It's possible that the input matrices you recieve could themselves be the output of an as_strided operation, so that they're represented in memory in a non-contiguous way.
 Make sure that your as_strided operation is using the strides from the original input matrix on the dimensions that aren't being repeated.
 </details>
-
 
 ```python
 def einsum_matmul(a: t.Tensor, b: t.Tensor) -> t.Tensor:
@@ -378,6 +369,7 @@ if MAIN:
 PyTorch's `conv1d` operates on 3D tensors, and it's easy to get confused on the shapes involved. To practice, for each test, `reshape` the variable `fix_me` so that the output of the `torch_conv1d` call matches the expected tensor.
 
 From the docs:
+
 - The "input" arg to conv1d should be shape (batch_size, in_channels, in_len)
 - The "weight" arg should be shape (out_channels, in_channels, kernel_width)
 - The output of this function will be shape (batch_size, out_channels, out_len), where out_len will be in_len - kernel_width + 1 (if stride is 1)
@@ -394,7 +386,6 @@ The input is (batch=1, in_channels=1, width=4).
 The output should be (batch=1, out_channels=1, out_width=3).
 
 The weights should be size (out_channels, in_channels, kernel_width), i.e. (1, 1, 2)
-
 
 </details>
 
@@ -422,8 +413,6 @@ The output has (batch=6, out_channels=2, out_width=1)
 
 For the input shape, use `out_width = width - kernel_width + 1` to solve `width=1`. So it should be shape (6, 1, 1)
 </details>
-
-
 
 ```python
 if MAIN:
@@ -464,7 +453,6 @@ When you do as_strided, make sure to use appropriate stride values from x.stride
 <summary>Hint 2 - using strided x and the weights to get the final output</summary>
 You should use einsum on your strided version of x and the input weights to get your final output. You should contract (elementwise product and then sum) over the input channels and kernel width.
 </details>
-
 
 ```python
 def conv1d_minimal(x: t.Tensor, weights: t.Tensor) -> t.Tensor:
@@ -524,7 +512,6 @@ Or it could be done recursively like this:
 It's also possible for an implementation to use an accumulator variable of higher precision, and only round at the end which produces different results.
 </details>
 
-
 ```python
 def conv2d_minimal(x: t.Tensor, weights: t.Tensor) -> t.Tensor:
     """Like torch's conv2d using bias=False and all other keyword arguments left at their default values.
@@ -548,7 +535,6 @@ if MAIN:
 For `conv` and the following `maxpool` you'll need to implement `pad` helper functions. PyTorch has some very generic padding functions, but to keep things simple and build up gradually, we'll write 1D and 2D functions individually.
 
 Tip: use the `new_full` method of the input tensor. This is a clean way to ensure that the output tensor is on the same device as the input.
-
 
 ```python
 def pad1d(x: t.Tensor, left: int, right: int, pad_value: float) -> t.Tensor:
@@ -603,7 +589,6 @@ Docs for pytorch's conv1d can be found [here](https://pytorch.org/docs/stable/ge
 When you perform as_strided on the input, there are two output dimensions that are derived from x.stride()[-1]. One of them should use this value without modification; the other one will use this value multiplied by the stride argument.
 </details>
 
-
 ```python
 def conv1d(x, weights, stride: int = 1, padding: int = 0) -> t.Tensor:
     """Like torch's conv1d using bias=False.
@@ -625,7 +610,6 @@ if MAIN:
 
 A recurring pattern in these 2d functions is allowing the user to specify either an int or a pair of ints for an argument: examples are stride and padding. We've provided some type aliases and a helper function to simplify working with these.
 
-
 ```python
 IntOrPair = Union[int, tuple[int, int]]
 Pair = tuple[int, int]
@@ -646,7 +630,6 @@ def force_pair(v: IntOrPair) -> Pair:
 ### Padding and Stride for `conv2d`
 
 Note the type signature: stride and padding can be either a single number or a tuple for each sliding dimension.
-
 
 ```python
 def conv2d(x, weights, stride: IntOrPair = 1, padding: IntOrPair = 0) -> t.Tensor:
@@ -691,7 +674,6 @@ The most common cause of this is a wrong padding value. You used zero for the pa
 
 </details>
 
-
 ```python
 def maxpool2d(
     x: t.Tensor, kernel_size: IntOrPair, stride: Optional[IntOrPair] = None, padding: IntOrPair = 0
@@ -728,7 +710,6 @@ It would be possible to validate (ensure `kernel_size` is positive) and standard
 ### extra_repr
 
 One consequence of subclassing `nn.Module` is that this method is called when you `repr()` an instance of this class, such as printing it in a REPL or notebook. It should provide a human-readable string representation of the attributes of the module that we might want to know about. In this case, these are provided as arguments to the constructor: `kernel_size`, `stride`, and `padding`. You may want to delegate this to a helper function, since you'll be writing this method for every `Module` you implement today that has arguments. Hint: you can use `getattr(object, name)` to programmatically look up `object.name`.
-
 
 ```python
 "TODO: YOUR CODE HERE"
@@ -786,7 +767,6 @@ You should initialize the weight `Tensor` before you wrap it in a `Parameter`, b
 
 For the `forward` method, remember that "..." can be used to represent unnamed dimensions in an einsum. (Docs [here](https://pytorch.org/docs/stable/generated/torch.einsum.html), search for "Ellipsis".)
 
-
 ```python
 class Linear(nn.Module):
     def __init__(self, in_features: int, out_features: int, bias=True):
@@ -820,7 +800,6 @@ if MAIN:
 The initialization of the Conv2d is also very important. PyTorch does the same uniform distribution, considering `in_features` to be the number of inputs contributing to each output value: `in_channels * product(kernel_size)`.
 
 Remember to use `force_pair` before using `kernel_size`, `stride`, and `padding`, which could come as ints or pairs to the constructor.
-
 
 ```python
 class Conv2d(t.nn.Module):
@@ -870,7 +849,6 @@ In eval mode, you should use the running mean and variance that you stored befor
 
 Implement `BatchNorm2d` according to the [PyTorch docs](https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html). Call your learnable parameters `weight` and `bias` for consistency with PyTorch.
 
-
 ```python
 class BatchNorm2d(nn.Module):
     running_mean: t.Tensor
@@ -912,7 +890,6 @@ if MAIN:
 
 Write the module version of ReLU using `torch.maximum`. Its constructor has no arguments, so it doesn't need an `extra_repr`.
 
-
 ```python
 class ReLU(nn.Module):
     def forward(self, x: t.Tensor) -> t.Tensor:
@@ -925,7 +902,6 @@ class ReLU(nn.Module):
 [torch.nn.Sequential](https://pytorch.org/docs/stable/generated/torch.nn.Sequential.html) has a number of features, but we'll just implement the basics that we need for today.
 
 Note: the base class's `repr` already recursively prints out the submodules, so you don't need to write anything in `extra_repr`.
-
 
 ```python
 class Sequential(nn.Module):
@@ -959,7 +935,6 @@ Implement your own [Flatten](https://pytorch.org/docs/stable/generated/torch.nn.
 
 </details>
 
-
 ```python
 class Flatten(nn.Module):
     def __init__(self, start_dim: int = 1, end_dim: int = -1) -> None:
@@ -990,7 +965,6 @@ The ResNet has a Linear layer with 1000 outputs at the end in order to produce c
 
 Luckily, the simplest possible solution works decently: take the mean over the spatial dimensions. Intuitively, each position has an equal "vote" for what objects it can "see".
 
-
 ```python
 class AveragePool(nn.Module):
     def forward(self, x: t.Tensor) -> t.Tensor:
@@ -1001,7 +975,6 @@ class AveragePool(nn.Module):
         pass
 
 ```
-
 
 ## Assembling ResNet
 
@@ -1024,9 +997,22 @@ subgraph " "
         Input[Input<br>] --> InConv[7x7 Conv<br>64 channels, stride 2] --> InBN[BatchNorm] --> InReLU[ReLU] --> InPool[3x3 MaxPool<br>Stride 2] --> BlockGroups[BlockGroups<br>0, 1, ..., N] --> AveragePool --> Flatten --> Linear[Linear<br/>1000 outputs] --> Out
     end
 
+end
+```
+
+```mermaid
+graph TD
+subgraph " "
     subgraph BlockGroup
         BGIn[Input] --> DRB[ResidualBlock<br>WITH optional part] --> RB0[ResidualBlocks<br>0, 1, ..., N<br>WITHOUT optional part] --> BGOut[Out]
     end
+
+end
+```
+
+```mermaid
+graph TD
+subgraph " "
 
     subgraph ResidualBlock
         BIn[Input] --> BConv[Strided Conv] --> BBN1[BatchNorm] --> ReLU --> BConv2[Conv] --> BBN2[BatchNorm] --> Add --> ReLu2[ReLU] --> RBOut[Out]
@@ -1034,7 +1020,6 @@ subgraph " "
     end
 end
 ```
-
 
 ### Residual Block
 
@@ -1047,7 +1032,6 @@ Implement `ResidualBlock` by referring to the diagram. The number of channels ch
 The stride only applies to first convolution in each branch. If you apply it to the second convolution in the left branch, the add won't work because you'll have shrunk the left branch twice.
 
 </details>
-
 
 ```python
 class ResidualBlock(nn.Module):
@@ -1077,7 +1061,6 @@ class ResidualBlock(nn.Module):
 
 Implement BlockGroup according to the diagram. The number of channels changes from `in_feats` to `out_feats` at the first convolution in the BlockGroup.
 
-
 ```python
 class BlockGroup(nn.Module):
     def __init__(self, n_blocks: int, in_feats: int, out_feats: int, first_stride=1):
@@ -1097,7 +1080,6 @@ class BlockGroup(nn.Module):
 ### ResNet34
 
 Last step! Assemble `ResNet34` using the diagram.
-
 
 ```python
 class ResNet34(nn.Module):
@@ -1130,7 +1112,6 @@ This will be tedious and if you really hate this, it might be a sign that ML eng
 
 Tip: `load_state_dict` expects an `OrderedDict`, but since Python 3.7, the builtin `dict` is guaranteed to maintain items in the order they're inserted, so you can safely use a regular `dict`.
 
-
 ```python
 if MAIN and (not IS_CI):
     "TODO: YOUR CODE HERE"
@@ -1160,7 +1141,6 @@ This can indicate that your model weights are randomly initialized, meaning the 
 To debug this, find the first place where `nan` appears. One way to do this is with forward hooks. An example of using hooks is given below.
 
 </details>
-
 
 ```python
 def check_nan_hook(module: nn.Module, inputs, output):
@@ -1198,7 +1178,6 @@ ImageNet is going to take too long, so we'll use a much smaller dataset called C
 ### Preparing the CIFAR10 Data
 
 The data preparation is the same as before, so we've provided it to save time. Following good practice, we'll verify that preprocessed data is roughly normalized to mean 0 and std 1, and looks reasonable visually.
-
 
 ```python
 cifar_classes = {
@@ -1252,7 +1231,6 @@ We've provided a basic training loop which is far from optimal, but will serve f
 
 You may encounter some issues running on GPU. The most common issue is if you manually created any tensors, they could be on the wrong device. The PyTorch docs has a section on [creation ops](https://pytorch.org/docs/stable/torch.html#tensor-creation-ops) which has useful functions for dealing with this cleanly including `empty_like` and `zeros_like`.
 
-
 ```python
 MODEL_FILENAME = "./w1d2_resnet34_cifar10.pt"
 device = "cuda" if t.cuda.is_available() else "cpu"
@@ -1292,7 +1270,6 @@ if MAIN and (not IS_CI):
 After one epoch, my ResNet achieved 54% accuracy (random guessing would be 10%), train loss of 1.2 and test loss of 1.3.
 After eight epochs, it achieved 68% accuracy, train loss of 0.4 and test loss of 1.1. This generalization gap means the model is overfitting. By the end of the course you'll be able to do better than this.
 
-
 ```python
 if MAIN and (not IS_CI):
     model.eval()
@@ -1330,7 +1307,6 @@ We did a pretty basic initialization today. Read up on Xavier and Kaiming initia
 ### Residual Block Identity Initialization
 
 The ResNet from `torchvision` has a `zero_init_residual` argument. Investigate the source code in `torchvision/models/resnet.py` and see what this does, then replicate it.
-
 
 ### Data Augmentation
 
