@@ -2,7 +2,6 @@
 
 
 Preliminary questions:
-- Explain if __name__ == '__main__': and argparse
 - Run the script with the defaults parameters on the terminal
 - Explain from torch.distributions.categorical import Categorical
 - google gym python, why is it useful?
@@ -10,8 +9,8 @@ Preliminary questions:
 - Is policy gradient on-policy or off-policy?
 
 Read all the code, then:
-- Use https://github.com/patrick-kidger/torchtyping to type the functions get_policy, get_action and compute_loss
-- Use from typeguard import typechecked and the @typechecked decorator to check the previous question.
+- Complete the ... in the compute_loss function.
+- Use https://github.com/patrick-kidger/torchtyping to type the functions get_policy, get_action. You can draw inspiration from the compute_loss function.
 - Answer the questions
 """
 # fmt: off
