@@ -24,7 +24,7 @@ We draw inspiration from the redwood mlab, which focuses mainly on the ML engine
 
 ### Installation
 
-To set up your machine, the simplest way is to install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) and then create a virtual environment containing the correct versions of the dependencies. On macOS or Linux you can do this (setting ENV_PATH to the absolute path to your cloned repo):
+To set up your machine, the simplest way is to install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) and then create a virtual environment containing the correct versions of the dependencies.
 
 ```
 git clone https://github.com/EffiSciencesResearch/ML4G.git
