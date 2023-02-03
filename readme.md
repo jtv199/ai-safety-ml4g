@@ -1,4 +1,4 @@
-This repo contains the instructions for the ML for Good seminar proposed by EffiSciences for French speaking students and researchers interested in AI safety.
+This repo contains the instructions for the ML for Good bootcamp, for students and researchers interested in AI safety.
 
 The program is aimed at beginners in machine learning, but is quite ambitious, and we hope that even advanced students will enjoy participating in this program.
 
@@ -18,7 +18,7 @@ Second week: Starting the projects
 
 - w2d1 - Presentation of possible projects and choice of project
 - w2d2 - Literature review on the issue
-- w2d3 - Beginning of the work in groups of 2
+- w2d3 - Beginning of the projets in groups.
 
 We draw inspiration from the redwood mlab, which focuses mainly on the ML engineering part. In comparison, we will spend more time on conceptual aspects.
 
