@@ -1,5 +1,6 @@
 import torch as t
 from utils import report, allclose, assert_all_equal, allclose_atol
+from typing import List
 
 
 @report
@@ -179,7 +180,14 @@ def test_pad2d(pad):
 def test_pad2d_multi_channel(pad):
     """Should work with two channels of 2x1."""
     x = t.arange(4).float().view((1, 2, 2, 1))
-    expected = t.tensor([[[[-1.0, 0.0], [-1.0, 1.0], [-1.0, -1.0]], [[-1.0, 2.0], [-1.0, 3.0], [-1.0, -1.0]]]])
+    expected = t.tensor(
+        [
+            [
+                [[-1.0, 0.0], [-1.0, 1.0], [-1.0, -1.0]],
+                [[-1.0, 2.0], [-1.0, 3.0], [-1.0, -1.0]],
+            ]
+        ]
+    )
     actual = pad(x, 1, 0, 0, 1, -1.0)
     assert_all_equal(actual, expected)
 
@@ -259,7 +267,9 @@ def test_conv2d_module(Conv2d):
     TBD: anything else here? We already tested the functional form sufficiently beforehand.
     """
     m = Conv2d(4, 5, (3, 3))
-    assert isinstance(m.weight, t.nn.parameter.Parameter), "Weight should be registered a parameter!"
+    assert isinstance(
+        m.weight, t.nn.parameter.Parameter
+    ), "Weight should be registered a parameter!"
     assert m.weight.nelement() == 4 * 5 * 3 * 3
 
 
@@ -373,8 +383,13 @@ def test_sequential(Sequential):
     modules = [Linear(1, 2), ReLU(), Linear(2, 1)]
     s = Sequential(*modules)
 
-    assert list(s.modules()) == [s, *modules], "The sequential and its submodules should be registered Modules."
-    assert len(list(s.parameters())) == 4, "Submodules's parameters should be registered."
+    assert list(s.modules()) == [
+        s,
+        *modules,
+    ], "The sequential and its submodules should be registered Modules."
+    assert (
+        len(list(s.parameters())) == 4
+    ), "Submodules's parameters should be registered."
 
 
 @report
@@ -390,5 +405,5 @@ def test_sequential_forward(Sequential):
 
 
 @report
-def test_same_predictions(your_model_predictions: list[int]):
+def test_same_predictions(your_model_predictions: List[int]):
     assert your_model_predictions == [367, 207, 103, 604, 865, 562, 628, 39, 980, 447]
