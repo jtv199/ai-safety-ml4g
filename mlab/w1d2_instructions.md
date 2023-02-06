@@ -110,7 +110,7 @@ import os
 import sys
 from collections import OrderedDict
 from io import BytesIO
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Union, List, Tuple
 from pathlib import Path
 import requests
 import torch as t
@@ -129,7 +129,7 @@ import w1d2_test
 
 MAIN = __name__ == "__main__"
 IS_CI = os.getenv("IS_CI")
-images: list[Image.Image] = []
+images: List[Image.Image] = []
 
 ```
 
@@ -204,7 +204,7 @@ preprocess = transforms.Compose(["your code here"])
 Implement `prepare_data` below.
 
 ```python
-def prepare_data(images: list[Image.Image]) -> t.Tensor:
+def prepare_data(images: List[Image.Image]) -> t.Tensor:
     """Preprocess each image and stack them into a single tensor.
 
     Return: shape (batch=len(images), num_channels=3, height=224, width=224)
@@ -232,7 +232,7 @@ with open("w1d2_imagenet_labels.json") as f:
 Implement `predict` below and call it with your images. Remember the gotcha discussed above.
 
 ```python
-def predict(model, images: list[Image.Image], print_topk_preds=3) -> list[int]:
+def predict(model, images: List[Image.Image], print_topk_preds=3) -> List[int]:
     """
     Pass the images through the model and print out the top predictions.
 
@@ -611,8 +611,9 @@ if MAIN:
 A recurring pattern in these 2d functions is allowing the user to specify either an int or a pair of ints for an argument: examples are stride and padding. We've provided some type aliases and a helper function to simplify working with these.
 
 ```python
-IntOrPair = Union[int, tuple[int, int]]
-Pair = tuple[int, int]
+from typing import Tuple
+IntOrPair = Union[int, Tuple[int, int]]
+Pair = Tuple[int, int]
 
 
 def force_pair(v: IntOrPair) -> Pair:
