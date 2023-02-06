@@ -15,3 +15,4 @@ days/saved_models/tutorial10/**
 days/data/TinyImageNet.zip
 mlab/runs/**
 .pth
+runs/**
