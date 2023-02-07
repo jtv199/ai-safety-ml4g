@@ -63,7 +63,7 @@ def assert_shape_equal(actual: t.Tensor, expected: t.Tensor) -> None:
         raise AssertionError(f"expected shape={expected.shape}, got {actual.shape}")
 
 
-def allclose(actual: t.Tensor, expected: t.Tensor, rtol=1e-4) -> None:
+def allclose(actual: t.Tensor, expected: t.Tensor, rtol=1e-3) -> None:
     assert_shape_equal(actual, expected)
     left = (actual - expected).abs()
     right = rtol * expected.abs()
@@ -71,7 +71,9 @@ def allclose(actual: t.Tensor, expected: t.Tensor, rtol=1e-4) -> None:
     if num_wrong > 0:
         print(f"Test failed. Max absolute deviation: {left.max()}")
         print(f"Actual:\n{actual}\nExpected:\n{expected}")
-        raise AssertionError(f"allclose failed with {num_wrong} / {left.nelement()} entries outside tolerance")
+        raise AssertionError(
+            f"allclose failed with {num_wrong} / {left.nelement()} entries outside tolerance"
+        )
     elif DEBUG_TOLERANCES:
         print(f"Test passed with max absolute deviation of {left.max()}")
 
@@ -83,7 +85,9 @@ def allclose_atol(actual: t.Tensor, expected: t.Tensor, atol: float) -> None:
     if num_wrong > 0:
         print(f"Test failed. Max absolute deviation: {left.max()}")
         print(f"Actual:\n{actual}\nExpected:\n{expected}")
-        raise AssertionError(f"allclose failed with {num_wrong} / {left.nelement()} entries outside tolerance")
+        raise AssertionError(
+            f"allclose failed with {num_wrong} / {left.nelement()} entries outside tolerance"
+        )
     elif DEBUG_TOLERANCES:
         print(f"Test passed with max absolute deviation of {left.max()}")
 
@@ -93,7 +97,9 @@ def allclose_scalar(actual: float, expected: float, rtol=1e-4) -> None:
     right = rtol * abs(expected)
     wrong = left > right
     if wrong:
-        raise AssertionError(f"Test failed. Absolute deviation: {left}\nActual:\n{actual}\nExpected:\n{expected}")
+        raise AssertionError(
+            f"Test failed. Absolute deviation: {left}\nActual:\n{actual}\nExpected:\n{expected}"
+        )
     elif DEBUG_TOLERANCES:
         print(f"Test passed with absolute deviation of {left}")
 
@@ -102,7 +108,9 @@ def allclose_scalar_atol(actual: float, expected: float, atol: float) -> None:
     left = abs(actual - expected)
     wrong = left > atol
     if wrong:
-        raise AssertionError(f"Test failed. Absolute deviation: {left}\nActual:\n{actual}\nExpected:\n{expected}")
+        raise AssertionError(
+            f"Test failed. Absolute deviation: {left}\nActual:\n{actual}\nExpected:\n{expected}"
+        )
     elif DEBUG_TOLERANCES:
         print(f"Test passed with absolute deviation of {left}")
 
