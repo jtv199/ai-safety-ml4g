@@ -16,3 +16,5 @@ days/data/TinyImageNet.zip
 mlab/runs/**
 .pth
 runs/**
+mlab/data/**
+mlab/w1d2_cifar10_train/**
