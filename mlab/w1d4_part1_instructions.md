@@ -115,7 +115,7 @@ Also recall that PyTorch accumulates gradients across multiple `backward` calls.
 You may not want PyTorch to track gradients for some computations despite involving tensors with `requires_grad=True`. In this case, you can wrap the computation in the `with torch.inference_mode()` context to prevent this tracking. Example:
 
 ```python
-from typing import Iterable, Union, Optional
+from typing import Iterable, Union, Optional, List, Tuple
 import matplotlib.pyplot as plt
 import matplotlib.figure
 import torch as t
@@ -213,7 +213,7 @@ class TensorDataset:
         """Validate the sizes and store the tensors in a field named `tensors`."""
         pass
 
-    def __getitem__(self, index: Union[int, slice]) -> tuple[t.Tensor, ...]:
+    def __getitem__(self, index: Union[int, slice]) -> Tuple[t.Tensor, ...]:
         """Return a tuple of length len(self.tensors) with the index applied to each."""
         pass
 
@@ -280,7 +280,7 @@ For example, ImageNet has around 1.3 million training images and only 50K valida
 Hint: use [`torch.randperm`](https://pytorch.org/docs/stable/generated/torch.randperm.html).
 
 ```python
-def train_test_split(all_data: TensorDataset, train_frac=0.8, val_frac=0.01, test_frac=0.01) -> list[TensorDataset]:
+def train_test_split(all_data: TensorDataset, train_frac=0.8, val_frac=0.01, test_frac=0.01) -> List[TensorDataset]:
     """Return [train, val, test] datasets containing the specified fraction of examples.
 
     If the fractions add up to less than 1, some of the data is not used.
@@ -618,7 +618,7 @@ class Adam:
         self,
         params: Iterable[t.nn.parameter.Parameter],
         lr: float = 0.001,
-        betas: tuple[float, float] = (0.9, 0.999),
+        betas: Tuple[float, float] = (0.9, 0.999),
         eps: float = 1e-08,
         weight_decay: float = 0.0,
     ):

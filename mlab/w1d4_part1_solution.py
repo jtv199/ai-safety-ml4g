@@ -88,7 +88,7 @@ You may not want PyTorch to track gradients for some computations despite involv
 """
 
 # %%
-from typing import Iterable, Union, Optional
+from typing import Iterable, Union, Optional, List, Tuple
 
 import matplotlib.pyplot as plt
 import matplotlib.figure
@@ -179,7 +179,9 @@ Choose a picture and save it on the filesystem, or use the provided image. If yo
 if MAIN:
     fname = "./w1d4_vangogh.jpg"
     img = Image.open(fname)
-    print(f"Image size in pixels: {img.size[0]} x {img.size[1]} = {img.size[0] * img.size[1]}")
+    print(
+        f"Image size in pixels: {img.size[0]} x {img.size[1]} = {img.size[0] * img.size[1]}"
+    )
     plt.imshow(img)
     pass
 
@@ -196,6 +198,8 @@ The class `torch.utils.data.dataset.TensorDataset` is a convenient wrapper for p
 
 `slice` is a built-in type containing `start`, `stop`, and `step` fields which can be integers or `None`. Given `x=[1,2,3,4,5,6,7]`, writing `x[1:5:2]` is syntactic sugar for `x[slice(1, 5, 2)]`.
 """
+
+
 # %%
 class TensorDataset:
     def __init__(self, *tensors: t.Tensor):
@@ -203,10 +207,12 @@ class TensorDataset:
         "SOLUTION"
         if tensors:
             size = tensors[0].shape[0]
-            assert all(tensor.shape[0] == size for tensor in tensors), "Size mismatch between tensors"
+            assert all(
+                tensor.shape[0] == size for tensor in tensors
+            ), "Size mismatch between tensors"
         self.tensors = tensors
 
-    def __getitem__(self, index: Union[int, slice]) -> tuple[t.Tensor, ...]:
+    def __getitem__(self, index: Union[int, slice]) -> Tuple[t.Tensor, ...]:
         """Return a tuple of length len(self.tensors) with the index applied to each."""
         "SOLUTION"
         return tuple(tensor[index] for tensor in self.tensors)
@@ -234,6 +240,8 @@ Implement `preprocess_image` to do the following:
 - Build a tensor of the corresponding RGB values and scale each color to the range `[-1, 1]`. These will be the labels.
 - Return the inputs and labels wrapped in a `TensorDataset`.
 """
+
+
 # %%
 def all_coordinates_scaled(height: int, width: int) -> t.Tensor:
     """Return a tensor of shape (height*width, 2) where each row is a (x, y) coordinate.
@@ -275,8 +283,12 @@ For example, ImageNet has around 1.3 million training images and only 50K valida
 
 Hint: use [`torch.randperm`](https://pytorch.org/docs/stable/generated/torch.randperm.html).
 """
+
+
 # %%
-def train_test_split(all_data: TensorDataset, train_frac=0.8, val_frac=0.01, test_frac=0.01) -> list[TensorDataset]:
+def train_test_split(
+    all_data: TensorDataset, train_frac=0.8, val_frac=0.01, test_frac=0.01
+) -> List[TensorDataset]:
     """Return [train, val, test] datasets containing the specified fraction of examples.
 
     If the fractions add up to less than 1, some of the data is not used.
@@ -297,7 +309,9 @@ def train_test_split(all_data: TensorDataset, train_frac=0.8, val_frac=0.01, tes
 if MAIN:
     all_data = preprocess_image(img)
     train_data, val_data, test_data = train_test_split(all_data)
-    print(f"Dataset sizes: train {len(train_data)}, val {len(val_data)} test {len(test_data)}")
+    print(
+        f"Dataset sizes: train {len(train_data)}, val {len(val_data)} test {len(test_data)}"
+    )
 
 # %%
 """
@@ -326,6 +340,8 @@ Did you use `.long()` or `.to(torch.int64)` to make your coordinates integers? D
 
 </details>
 """
+
+
 # %%
 def to_grid(X: t.Tensor, Y: t.Tensor, width: int, height: int) -> t.Tensor:
     """Convert preprocessed data from the format used in the Dataset back to an image tensor.
@@ -421,6 +437,8 @@ Implement the `train_one_epoch` function below.
 
 </details>
 """
+
+
 # %%
 def train_one_epoch(model: ImageMemorizer, dataloader: DataLoader) -> float:
     """Show each example in the dataloader to the model once.
@@ -456,6 +474,8 @@ Write an evaluate function which calculates the average L1 loss on the provided 
 
 Tip: since you don't need gradients for this step, wrap your forward call in the `with torch.inference_mode()` context to avoid unnecessary computation.
 """
+
+
 # %%
 def evaluate(model: ImageMemorizer, dataloader: DataLoader) -> float:
     """Return the total L1 loss over the provided data divided by the number of examples."""
@@ -565,12 +585,16 @@ For each dimension, use `torch.linspace` to generate evenly spaced values, then 
 
 </details>
 """
+
+
 # %%
 def rosenbrocks_banana(x: t.Tensor, y: t.Tensor, a=1, b=100) -> t.Tensor:
     return (a - x) ** 2 + b * (y - x**2) ** 2 + 1
 
 
-def plot_rosenbrock(xmin=-2, xmax=2, ymin=-1, ymax=3, n_points=50, log_scale=False) -> matplotlib.figure.Figure:
+def plot_rosenbrock(
+    xmin=-2, xmax=2, ymin=-1, ymax=3, n_points=50, log_scale=False
+) -> matplotlib.figure.Figure:
     """Plot the rosenbrocks_banana function over the specified domain.
 
     If log_scale is True, take the logarithm of the output before plotting.
@@ -616,6 +640,8 @@ All you need to do to convince PyTorch you're a responsible adult is to call `de
 
 </details>
 """
+
+
 # %%
 def opt_banana(xy: t.Tensor, n_iters: int, lr=0.001, momentum=0.98):
     """Optimize the banana starting from the specified point.
@@ -681,9 +707,17 @@ You MUST use in-place operations in your optimizer because we want the model to 
 
 ### SGD
 """
+
+
 # %%
 class SGD:
-    def __init__(self, params: Iterable[t.nn.parameter.Parameter], lr: float, momentum: float, weight_decay: float):
+    def __init__(
+        self,
+        params: Iterable[t.nn.parameter.Parameter],
+        lr: float,
+        momentum: float,
+        weight_decay: float,
+    ):
         """Implements SGD with momentum.
 
         Like the PyTorch version, but assume nesterov=False, maximize=False, and dampening=0
@@ -695,7 +729,7 @@ class SGD:
         self.lr = lr
         self.wd = weight_decay
         self.mu = momentum
-        self.b: list[Optional[t.Tensor]] = [None for _ in self.params]
+        self.b: List[Optional[t.Tensor]] = [None for _ in self.params]
 
     def zero_grad(self) -> None:
         "SOLUTION"
@@ -723,6 +757,8 @@ if MAIN:
 """
 ### RMSprop
 """
+
+
 # %%
 class RMSprop:
     def __init__(
@@ -776,13 +812,15 @@ if MAIN:
 """
 ### Adam
 """
+
+
 # %%
 class Adam:
     def __init__(
         self,
         params: Iterable[t.nn.parameter.Parameter],
         lr: float = 0.001,
-        betas: tuple[float, float] = (0.9, 0.999),
+        betas: Tuple[float, float] = (0.9, 0.999),
         eps: float = 1e-08,
         weight_decay: float = 0.0,
     ):
