@@ -13,26 +13,26 @@ By the end of the day, you'll have trained your ResNet from W1D2 using your own 
 - [Stochastic Gradient Descent](#stochastic-gradient-descent)
 - [Batch Size](#batch-size)
 - [Computing Gradients in PyTorch - W1D3 Review](#computing-gradients-in-pytorch---wd-review)
-    - [Stopping gradients with `torch.no_grad` or `torch.inference_mode`](#stopping-gradients-with-torchnograd-or-torchinferencemode)
+  - [Stopping gradients with `torch.no_grad` or `torch.inference_mode`](#stopping-gradients-with-torchnograd-or-torchinferencemode)
 - [Common Themes in Gradient-Based Optimizers](#common-themes-in-gradient-based-optimizers)
-    - [Weight Decay](#weight-decay)
-    - [Momentum](#momentum)
-    - [Many More Optimizer Variants](#many-more-optimizer-variants)
+  - [Weight Decay](#weight-decay)
+  - [Momentum](#momentum)
+  - [Many More Optimizer Variants](#many-more-optimizer-variants)
 - [Exercise: Learning To Reproduce a Picture](#exercise-learning-to-reproduce-a-picture)
-    - [The "device" variable](#the-device-variable)
+  - [The "device" variable](#the-device-variable)
 - [Build Your Own TensorDataset](#build-your-own-tensordataset)
-    - [Slice Objects in Python](#slice-objects-in-python)
+  - [Slice Objects in Python](#slice-objects-in-python)
 - [Data Preprocessing](#data-preprocessing)
-    - [Train-Test Split](#train-test-split)
-    - [Visualizing the Training Data](#visualizing-the-training-data)
+  - [Train-Test Split](#train-test-split)
+  - [Visualizing the Training Data](#visualizing-the-training-data)
 - [DataLoaders](#dataloaders)
 - [Visualising Optimization With Rosenbrock's Banana](#visualising-optimization-with-rosenbrocks-banana)
 - [Build Your Own Optimizers](#build-your-own-optimizers)
-    - [Gotcha: In-Place Operations](#gotcha-in-place-operations)
-    - [More Tips](#more-tips)
-    - [SGD](#sgd)
-    - [RMSprop](#rmsprop)
-    - [Adam](#adam)
+  - [Gotcha: In-Place Operations](#gotcha-in-place-operations)
+  - [More Tips](#more-tips)
+  - [SGD](#sgd)
+  - [RMSprop](#rmsprop)
+  - [Adam](#adam)
 - [Onward to Part 2](#onward-to-part-)
 - [Bonus](#bonus)
 
@@ -114,7 +114,6 @@ Also recall that PyTorch accumulates gradients across multiple `backward` calls.
 
 You may not want PyTorch to track gradients for some computations despite involving tensors with `requires_grad=True`. In this case, you can wrap the computation in the `with torch.inference_mode()` context to prevent this tracking. Example:
 
-
 ```python
 from typing import Iterable, Union, Optional
 import matplotlib.pyplot as plt
@@ -138,8 +137,8 @@ if MAIN:
     print(f"y requires grad: {y.requires_grad}; z requires grad: {z.requires_grad}")
 
 ```
-Result: `y requires grad: True; z requires grad: False`
 
+Result: `y requires grad: True; z requires grad: False`
 
 ## Common Themes in Gradient-Based Optimizers
 
@@ -159,7 +158,6 @@ Momentum means that the step includes a term proportional to a moving average of
 
 [Sebastian Ruder's blog](https://ruder.io/optimizing-gradient-descent/) goes into detail on many more variants of gradient descent.
 
-
 ## Exercise: Learning To Reproduce a Picture
 
 In this exercise you will train a neural network to memorize a picture of your choice! Your network will implement a function from the $(x, y)$ coordinates of a pixel to three numbers $(R, G, B)$ representing the color of that pixel. Implement the `ImageMemorizer` network with three Linear layers and two ReLUs (generally, you don't want a ReLU after the last Linear layer). Test that your model matches the reference.
@@ -167,7 +165,6 @@ In this exercise you will train a neural network to memorize a picture of your c
 ### The "device" variable
 
 A useful idiom when writing code to run on both CPU and GPU is to declare a `device` variable at the top of your notebook and then use it later on when creating or moving tensors. We've done this for you today.
-
 
 ```python
 device = t.device("cuda" if t.cuda.is_available() else "cpu")
@@ -190,7 +187,6 @@ if MAIN:
 
 Choose a picture and save it on the filesystem, or use the provided image. If your chosen image is much larger than 1 million pixels, crop it with `img.crop((left, top, right, bottom))` and/or resize it with `img.resize((width, height))`.
 
-
 ```python
 if MAIN:
     fname = "./w1d4_vangogh.jpg"
@@ -210,7 +206,6 @@ The class `torch.utils.data.dataset.TensorDataset` is a convenient wrapper for p
 ### Slice Objects in Python
 
 `slice` is a built-in type containing `start`, `stop`, and `step` fields which can be integers or `None`. Given `x=[1,2,3,4,5,6,7]`, writing `x[1:5:2]` is syntactic sugar for `x[slice(1, 5, 2)]`.
-
 
 ```python
 class TensorDataset:
@@ -284,7 +279,6 @@ For example, ImageNet has around 1.3 million training images and only 50K valida
 
 Hint: use [`torch.randperm`](https://pytorch.org/docs/stable/generated/torch.randperm.html).
 
-
 ```python
 def train_test_split(all_data: TensorDataset, train_frac=0.8, val_frac=0.01, test_frac=0.01) -> list[TensorDataset]:
     """Return [train, val, test] datasets containing the specified fraction of examples.
@@ -354,7 +348,6 @@ In practice, SGD is relatively insensitive to whether you shuffle on every epoch
 
 </details>
 
-
 ```python
 if MAIN:
     train_loader = DataLoader(train_data, batch_size=256, shuffle=True)
@@ -377,7 +370,6 @@ Implement the `train_one_epoch` function below.
 - Are you calling `backward()` on the mean loss over the batch items? Note that if you don't use the mean, the magnitude of the gradients scales up linearly with the batch size, which is not what you want.
 
 </details>
-
 
 ```python
 def train_one_epoch(model: ImageMemorizer, dataloader: DataLoader) -> float:
@@ -415,7 +407,6 @@ if MAIN:
 The following cell creates a model with 400 neurons in each hidden layer and trains it for an epoch.
 
 If no errors appeared, do a few more epochs and plot the training loss and validation loss over time as a function of number of epochs. Compute the validation loss using your `evaluate` function. I was able to reach a validation loss below 0.2 after 40 epochs. Your image might be easier or harder to learn.
-
 
 ```python
 if MAIN:
@@ -465,12 +456,11 @@ Share your image with your friends if you like it! Here's the one my network lea
     <img src="w1d4_vangogh_solution.jpg" width=300/>
 </p>
 
-
 ## Visualising Optimization With Rosenbrock's Banana
 
 "Rosenbrock's Banana" is a (relatively) famous function that has a simple equation but is challenging to optimize because of the shape of the loss landscape.
 
-Implement `plot_rosenbrock` using `plt.subplots`, [`plt.contourf`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.contourf.html) and `plt.colorbar`. With the default rendering it's hard to see the minimum - if you plot the log of the function, the details will be more clear. Where is the minimum?
+Use `plot_rosenbrock` to plot the log of the function. Where is the minimum?
 
 <details>
 
@@ -488,7 +478,6 @@ For each dimension, use `torch.linspace` to generate evenly spaced values, then 
 
 </details>
 
-
 ```python
 def rosenbrocks_banana(x: t.Tensor, y: t.Tensor, a=1, b=100) -> t.Tensor:
     return (a - x) ** 2 + b * (y - x**2) ** 2 + 1
@@ -499,7 +488,17 @@ def plot_rosenbrock(xmin=-2, xmax=2, ymin=-1, ymax=3, n_points=50, log_scale=Fal
 
     If log_scale is True, take the logarithm of the output before plotting.
     """
-    pass
+    "SOLUTION"
+    fig, ax = plt.subplots()
+    x = t.linspace(xmin, xmax, n_points)
+    y = t.linspace(ymin, ymax, n_points)
+    xx = repeat(x, "x -> y x", y=n_points)
+    yy = repeat(y, "y -> y x", x=n_points)
+    zs = rosenbrocks_banana(xx, yy)
+    contour = ax.contourf(x, y, t.log(zs) if log_scale else zs)
+    ax.contour(contour)
+    ax.set(xlabel="x", ylabel="y")
+    return fig
 
 
 if MAIN:
@@ -529,7 +528,6 @@ This is a protective mechanism built into PyTorch. The idea is that once you con
 All you need to do to convince PyTorch you're a responsible adult is to call `detach()` on the tensor first, which returns a view that does not require grad and isn't part of the computation graph.
 
 </details>
-
 
 ```python
 def opt_banana(xy: t.Tensor, n_iters: int, lr=0.001, momentum=0.98):
@@ -562,8 +560,8 @@ Be careful with expressions like `x = x + y` and `x += y`. They are NOT equivale
 
 - The first one allocates a new `Tensor` of the appropriate size and adds `x` and `y` to it, then rebinds `x` to point to the new variable. The original `x` is not modified.
 - The second one modifies the storage referred to by `x` to contain the sum of `x` and `y` - it is an "in-place" operation.
-    - Another way to write the in-place operation is `x.add_(y)` (the trailing underscore indicates an in-place operation).
-    - A third way to write the in-place operation is `torch.add(x, y, out=x)`.
+  - Another way to write the in-place operation is `x.add_(y)` (the trailing underscore indicates an in-place operation).
+  - A third way to write the in-place operation is `torch.add(x, y, out=x)`.
 - This is rather subtle, so make sure you are clear on the difference. This isn't specific to PyTorch; the built-in Python `list` follows similar behavior: `x = x + y` allocates a new list, while `x += y` is equivalent to `x.extend(y)`.
 - In general, the first version calls the method `x.__add__(y)` while the second calls `x.__iadd__(y)`, and these two methods can have arbitrary semantics.
 
@@ -585,8 +583,9 @@ You MUST use in-place operations in your optimizer because we want the model to 
 - Be careful not to mix up `Parameter` and `Tensor` types in this step.
 - The actual PyTorch implementations have an additional feature called parameter groups where you can specify different hyperparameters for each group of parameters. You can ignore this for today.
 
-### SGD
+Tip: It is possible to not use if conditions in sgd and Adam. This simplifies the code.
 
+### SGD
 
 ```python
 class SGD:
@@ -611,9 +610,7 @@ if MAIN:
 
 ```
 
-
 ### Adam
-
 
 ```python
 class Adam:
@@ -647,7 +644,6 @@ if MAIN:
 ## Onward to Part 2
 
 Proceed to Part 2 where we will practice some hyperparameter searches. If you have time at the end of the day, come back and do the bonus section below.
-
 
 ## Bonus
 
