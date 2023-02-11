@@ -99,17 +99,19 @@ If you end with a ReLU, then your network can only predict 0 or positive rewards
 
 </details>
 """
+
+
 # %%
 class QNetwork(nn.Module):
     def __init__(
         self,
         num_observations: int,
         num_actions: int,
-        hidden_sizes: list[int] = [120, 84],
+        hidden_sizes: List[int] = [120, 84],
     ):
         "SOLUTION"
         super().__init__()
-        layers: list[nn.Module] = [
+        layers: List[nn.Module] = [
             nn.Linear(num_observations, hidden_sizes[0]),
             nn.ReLU(),
         ]
@@ -168,6 +170,7 @@ We're introducing this today because PPO will use it tomorrow with multiple inst
 In general, don't worry about execution speed today. It's okay to use for loops and accept that not everything can be efficiently vectorized. If we actually wanted to go fast, we would likely ditch Python entirely and write everything in C++.
 """
 
+
 # %%
 @dataclass
 class ReplayBufferSamples:
@@ -199,14 +202,20 @@ class ReplayBuffer:
         num_environments: int,
         seed: int,
     ):
-        assert num_environments == 1, "This buffer only supports SyncVectorEnv with 1 environment inside."
+        assert (
+            num_environments == 1
+        ), "This buffer only supports SyncVectorEnv with 1 environment inside."
         "SOLUTION"
         self.buffer_size = buffer_size
         self.num_actions = num_actions
         self.observation_shape = observation_shape
         self.num_environments = num_environments
-        self.observations = np.zeros((self.buffer_size,) + self.observation_shape, dtype=np.float32)
-        self.next_observations = np.zeros((self.buffer_size,) + self.observation_shape, dtype=np.float32)
+        self.observations = np.zeros(
+            (self.buffer_size,) + self.observation_shape, dtype=np.float32
+        )
+        self.next_observations = np.zeros(
+            (self.buffer_size,) + self.observation_shape, dtype=np.float32
+        )
         self.actions = np.zeros(self.buffer_size, dtype=np.int64)
         self.rewards = np.zeros(self.buffer_size, dtype=np.float32)
         self.dones = np.zeros(self.buffer_size, dtype=np.float32)
@@ -320,6 +329,8 @@ if MAIN:
 
 In later methods like policy gradient, we'll explicitly represent the policy as its own neural network. In DQN, the policy is implicitly defined by the Q-network: we take the action with the maximum predicted reward. This means we'll tend to choose actions which the Q-network is overly optimistic about, and then our agent will get less reward than expected.
 """
+
+
 # %%
 def epsilon_greedy_policy(
     envs: gym.vector.SyncVectorEnv,
@@ -338,7 +349,9 @@ def epsilon_greedy_policy(
     "SOLUTION"
     if rng.random() < epsilon:
         # TBD: can't we use envs.action_space.sample()?
-        actions = np.array([envs.single_action_space.sample() for _ in range(envs.num_envs)])
+        actions = np.array(
+            [envs.single_action_space.sample() for _ in range(envs.num_envs)]
+        )
     else:
         logits = q_network(obs)
         actions = torch.argmax(logits, dim=-1).cpu().numpy()
@@ -386,6 +399,8 @@ For now, implement the basic linearly decreasing exploration schedule. Plot it a
 
 </details>
 """
+
+
 # %%
 def linear_schedule(
     current_step: int,
@@ -407,7 +422,9 @@ def linear_schedule(
 
 if MAIN:
     epsilons = [
-        linear_schedule(step, start_e=1.0, end_e=0.05, exploration_fraction=0.5, total_timesteps=500)
+        linear_schedule(
+            step, start_e=1.0, end_e=0.05, exploration_fraction=0.5, total_timesteps=500
+        )
         for step in range(500)
     ]
     if "SOLUTION":
@@ -473,6 +490,8 @@ if MAIN:
 
 Feel free to skip ahead for now, and implement these as needed to debug your model.
 """
+
+
 # %%
 class Probe2(gym.Env):
     """One action, observation of [-1.0] or [+1.0], one timestep long, reward equals observation.
@@ -508,6 +527,8 @@ class Probe2(gym.Env):
 
 
 gym.envs.registration.register(id="Probe2-v0", entry_point=Probe2)
+
+
 # %%
 class Probe3(gym.Env):
     """One action, [0.0] then [1.0] observation, two timesteps, +1 reward at the end.
@@ -546,6 +567,8 @@ class Probe3(gym.Env):
 
 
 gym.envs.registration.register(id="Probe3-v0", entry_point=Probe3)
+
+
 # %%
 class Probe4(gym.Env):
     """Two actions, [0.0] observation, one timestep, reward is -1.0 or +1.0 dependent on the action.
@@ -579,6 +602,7 @@ class Probe4(gym.Env):
 
 
 gym.envs.registration.register(id="Probe4-v0", entry_point=Probe4)
+
 
 # %%
 class Probe5(gym.Env):
@@ -646,10 +670,14 @@ This means that once the agent starts to learn something and do better at the pr
 
 For example, the Q-network initially learned some state was bad, because an agent that reached them was just derping around randomly and died shortly after. But now it's getting evidence that the same state is good, now that the agent that reached the state has a better idea what to do next. A higher loss is thus actually a good sign that learning is actively occurring if it's correlated with an increase in average reward obtained.
 """
+
+
 # %%
 @dataclass
 class DQNArgs:
-    exp_name: str = os.path.basename(globals().get("__file__", "DQN_implementation").rstrip(".py"))
+    exp_name: str = os.path.basename(
+        globals().get("__file__", "DQN_implementation").rstrip(".py")
+    )
     seed: int = 1
     torch_deterministic: bool = True
     cuda: bool = True
@@ -680,17 +708,20 @@ arg_help_strings = {
     "track": "if toggled, this experiment will be tracked with Weights and Biases",
     "wandb_project_name": "the wandb's project name",
     "wandb_entity": "the entity (team) of wandb's project",
-    "capture_video": "whether to capture videos of the agent performances (check " "out `videos` folder)",
+    "capture_video": "whether to capture videos of the agent performances (check "
+    "out `videos` folder)",
     "env_id": "the id of the environment",
     "total_timesteps": "total timesteps of the experiments",
     "learning_rate": "the learning rate of the optimizer",
     "buffer_size": "the replay memory buffer size",
     "gamma": "the discount factor gamma",
-    "target_network_frequency": "the timesteps it takes to update the target " "network",
+    "target_network_frequency": "the timesteps it takes to update the target "
+    "network",
     "batch_size": "the batch size of samples from the replay memory",
     "start_e": "the starting epsilon for exploration",
     "end_e": "the ending epsilon for exploration",
-    "exploration_fraction": "the fraction of `total-timesteps` it takes from " "start-e to go end-e",
+    "exploration_fraction": "the fraction of `total-timesteps` it takes from "
+    "start-e to go end-e",
     "learning_starts": "timestep to start learning",
     "train_frequency": "the frequency of training",
     "use_target_network": "If True, use a target network.",
@@ -702,7 +733,9 @@ def parse_args(arg_help_strings=arg_help_strings, toggles=toggles) -> DQNArgs:
     parser = argparse.ArgumentParser()
     for field in dataclasses.fields(DQNArgs):
         flag = "--" + field.name.replace("_", "-")
-        type_function = field.type if field.type != bool else lambda x: bool(strtobool(x))
+        type_function = (
+            field.type if field.type != bool else lambda x: bool(strtobool(x))
+        )
         toggle_kwargs = {"nargs": "?", "const": True} if field.name in toggles else {}
         parser.add_argument(
             flag,
@@ -734,7 +767,8 @@ def setup(
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
         "hyperparameters",
-        "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
+        "|param|value|\n|-|-|\n%s"
+        % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
     )
     random.seed(args.seed)
     np.random.seed(args.seed)
@@ -743,8 +777,12 @@ def setup(
 
     rng = np.random.default_rng(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-    envs = gym.vector.SyncVectorEnv([make_env(args.env_id, args.seed, 0, args.capture_video, run_name)])
-    assert isinstance(envs.single_action_space, Discrete), "only discrete action space is supported"
+    envs = gym.vector.SyncVectorEnv(
+        [make_env(args.env_id, args.seed, 0, args.capture_video, run_name)]
+    )
+    assert isinstance(
+        envs.single_action_space, Discrete
+    ), "only discrete action space is supported"
 
     return run_name, writer, rng, device, envs
 
@@ -811,7 +849,9 @@ def train_dqn(args: DQNArgs):
                 args.exploration_fraction,
                 args.total_timesteps,
             )
-            actions = epsilon_greedy_policy(envs, q_network, rng, torch.Tensor(obs).to(device), epsilon)
+            actions = epsilon_greedy_policy(
+                envs, q_network, rng, torch.Tensor(obs).to(device), epsilon
+            )
             assert actions.shape == (len(envs.envs),)
             next_obs, rewards, dones, infos = envs.step(actions)
             real_next_obs = next_obs.copy()
@@ -830,15 +870,22 @@ def train_dqn(args: DQNArgs):
                 with torch.no_grad():
                     net = target_network if args.use_target_network else q_network
                     target_max, _ = net(data.next_observations).max(dim=1)
-                    td_target = data.rewards.flatten() + args.gamma * target_max * (1 - data.dones.flatten())
+                    td_target = data.rewards.flatten() + args.gamma * target_max * (
+                        1 - data.dones.flatten()
+                    )
                 # NOTE: we asserted the action space was discrete, so this is fine
                 gather_arg = rearrange(data.actions, "a -> a 1")
-                predicted_q_vals = q_network(data.observations).gather(1, gather_arg).squeeze()  # (batch, num_actions)
+                predicted_q_vals = (
+                    q_network(data.observations).gather(1, gather_arg).squeeze()
+                )  # (batch, num_actions)
                 loss = F.mse_loss(td_target, predicted_q_vals)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-                if args.use_target_network and step % args.target_network_frequency == 0:
+                if (
+                    args.use_target_network
+                    and step % args.target_network_frequency == 0
+                ):
                     target_network.load_state_dict(q_network.state_dict())
             else:
                 """YOUR CODE: Sample from the replay buffer, compute the TD target, compute TD loss, and perform an optimizer step."""
@@ -889,7 +936,9 @@ def train_dqn(args: DQNArgs):
 if MAIN and not IS_CI:
     if "ipykernel_launcher" in os.path.basename(sys.argv[0]):
         filename = globals().get("__file__", "<filename of this script>")
-        print(f"Try running this file from the command line instead: python {os.path.basename(filename)} --help")
+        print(
+            f"Try running this file from the command line instead: python {os.path.basename(filename)} --help"
+        )
         args = DQNArgs()
     else:
         args = parse_args()

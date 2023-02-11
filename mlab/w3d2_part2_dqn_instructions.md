@@ -48,8 +48,6 @@ There are many more exciting environments to play in, but generally they're goin
 - [Deep Reinforcement Learning Works - Now What?](https://tesslerc.github.io/posts/drl_works_now_what/) - 2020 response to the previous article highlighting recent progress.
 - [Seed RL](https://github.com/google-research/seed_rl) - example of distributed RL using Docker and GCP.
 
-
-
 ```python
 import argparse
 import os
@@ -98,10 +96,9 @@ If you end with a ReLU, then your network can only predict 0 or positive rewards
 
 </details>
 
-
 ```python
 class QNetwork(nn.Module):
-    def __init__(self, num_observations: int, num_actions: int, hidden_sizes: list[int] = [120, 84]):
+    def __init__(self, num_observations: int, num_actions: int, hidden_sizes: List[int] = [120, 84]):
         pass
 
     def forward(self, x: t.Tensor) -> t.Tensor:
@@ -128,6 +125,7 @@ Another problem is that states within an episode are correlated and not i.i.d. a
 ### Replay buffer with uniform sampling
 
 A simple strategy that works decently well to combat these problems is to store the agent's "experiences" in a buffer, which is then sampled from to train the policy further. This works as follows:
+
 1. We start with a policy which we run in the environment for some number of steps.
 2. At each step we take the (`observation`, `action`, `reward`, `done`, `next_observation`) information that we got from that step and add it to the buffer.
 3. After we've done this for enough steps, we can randomly sample a batch of experience tuples from the buffer to train the policy further.
@@ -147,7 +145,6 @@ Our agent won't interact directly with an instance of the CartPole `Env`, but wi
 We're introducing this today because PPO will use it tomorrow with multiple instances inside, but DQN will only use it with a single instance.
 
 In general, don't worry about execution speed today. It's okay to use for loops and accept that not everything can be efficiently vectorized. If we actually wanted to go fast, we would likely ditch Python entirely and write everything in C++.
-
 
 ```python
 @dataclass
@@ -212,7 +209,6 @@ What we want to store in the replay buffer is the final observation of the old e
 - Run the code and inspect the replay buffer contents. Referring back to the [CartPole source](https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py), do the numbers make sense?
 - Look at the sample, and see if it looks properly shuffled.
 
-
 ```python
 if MAIN:
     rb = ReplayBuffer(buffer_size=256, num_actions=2, observation_shape=(4,), num_environments=1, seed=0)
@@ -234,7 +230,6 @@ if MAIN:
 ## Epsilon Greedy Policy
 
 In later methods like policy gradient, we'll explicitly represent the policy as its own neural network. In DQN, the policy is implicitly defined by the Q-network: we take the action with the maximum predicted reward. This means we'll tend to choose actions which the Q-network is overly optimistic about, and then our agent will get less reward than expected.
-
 
 ```python
 def epsilon_greedy_policy(
@@ -289,7 +284,6 @@ For now, implement the basic linearly decreasing exploration schedule. Plot it a
 
 </details>
 
-
 ```python
 def linear_schedule(
     current_step: int, start_e: float, end_e: float, exploration_fraction: float, total_timesteps: int
@@ -313,7 +307,6 @@ if MAIN:
 ## Probe Environments
 
 Extremely simple probe environments are a great way to debug your algorithm. Implement the first probe environment below.
-
 
 ```python
 ObsType = np.ndarray
@@ -352,7 +345,6 @@ if MAIN:
 ### Additional Probe Environments
 
 Feel free to skip ahead for now, and implement these as needed to debug your model.
-
 
 ```python
 class Probe2(gym.Env):
@@ -479,7 +471,6 @@ Our agent's loss function just reflects how close together the Q-network's estim
 This means that once the agent starts to learn something and do better at the problem, it's expected for the loss to increase.
 
 For example, the Q-network initially learned some state was bad, because an agent that reached them was just derping around randomly and died shortly after. But now it's getting evidence that the same state is good, now that the agent that reached the state has a better idea what to do next. A higher loss is thus actually a good sign that learning is actively occurring if it's correlated with an increase in average reward obtained.
-
 
 ```python
 @dataclass
