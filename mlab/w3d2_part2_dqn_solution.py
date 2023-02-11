@@ -465,13 +465,13 @@ class Probe1(gym.Env):
         self.action_space = Discrete(1)
         self.reset()
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         "SOLUTION"
         return np.array([0]), 1.0, True, {}
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         "SOLUTION"
         if return_info:
             return np.array([0.0]), {}
@@ -510,14 +510,14 @@ class Probe2(gym.Env):
         self.reset()
         self.reward = None
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         "SOLUTION"
         assert self.reward is not None
         return np.array([0]), self.reward, True, {}
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         "SOLUTION"
         super().reset(seed=seed)
         self.reward = 1.0 if self.np_random.random() < 0.5 else -1.0
@@ -546,7 +546,7 @@ class Probe3(gym.Env):
         self.action_space = Discrete(1)
         self.reset()
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         "SOLUTION"
         self.n += 1
         if self.n == 1:
@@ -557,7 +557,7 @@ class Probe3(gym.Env):
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         "SOLUTION"
         super().reset(seed=seed)
         self.n = 0
@@ -586,14 +586,14 @@ class Probe4(gym.Env):
         self.action_space = Discrete(2)
         self.reset()
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         "SOLUTION"
         reward = 1.0 if action == 1 else -1.0
         return np.array([0.0]), reward, True, {}
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         "SOLUTION"
         super().reset(seed=seed)
         if return_info:
@@ -621,14 +621,14 @@ class Probe5(gym.Env):
         self.action_space = Discrete(2)
         self.reset()
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         "SOLUTION"
         reward = 1.0 if action == self.obs else -1.0
         return np.array([-1.0]), reward, True, {}
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         "SOLUTION"
         super().reset(seed=seed)
         self.obs = 0 if self.np_random.random() < 0.5 else 1

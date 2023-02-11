@@ -325,12 +325,12 @@ class Probe1(gym.Env):
     def __init__(self):
         pass
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         pass
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         pass
 
 
@@ -359,12 +359,12 @@ class Probe2(gym.Env):
     def __init__(self):
         pass
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         pass
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         pass
 
 
@@ -383,12 +383,12 @@ class Probe3(gym.Env):
     def __init__(self):
         pass
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         pass
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         pass
 
 
@@ -407,12 +407,12 @@ class Probe4(gym.Env):
     def __init__(self):
         pass
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         pass
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         pass
 
 
@@ -431,12 +431,12 @@ class Probe5(gym.Env):
     def __init__(self):
         pass
 
-    def step(self, action: ActType) -> tuple[ObsType, float, bool, dict]:
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, dict]:
         pass
 
     def reset(
         self, seed: Optional[int] = None, return_info=False, options=None
-    ) -> Union[ObsType, tuple[ObsType, dict]]:
+    ) -> Union[ObsType, Tuple[ObsType, dict]]:
         pass
 
 
