@@ -2,7 +2,7 @@ This repo contains the instructions for the ML for Good bootcamp, for students a
 
 The program is aimed at beginners in machine learning, but is quite ambitious, and we hope that even advanced students will enjoy participating in this program.
 
-# Curriculum ML4G
+# Curriculum ML4Good
 
 First week: Classes, tutorials, peer coding:
 
