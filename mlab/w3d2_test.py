@@ -138,7 +138,7 @@ def test_epsilon_greedy_policy(epsilon_greedy_policy):
 
     def are_both_greedy(soln_acts, their_acts):
         return np.array_equal(soln_acts, greedy_action) and np.array_equal(
-            soln_acts, greedy_action
+            their_acts, greedy_action
         )
 
     both_greedy = [are_both_greedy(*get_actions(0.1, seed)) for seed in range(100)]
