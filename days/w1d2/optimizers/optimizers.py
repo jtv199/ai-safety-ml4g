@@ -17,7 +17,7 @@ Bonus for maths people:
 Tip: Press Alt+Z for automatic line return.
 
 
-# THIS CODE IS DEPRECATED
+# THIS CODE IS DEPRECATEDs
 """
 
 import torch
