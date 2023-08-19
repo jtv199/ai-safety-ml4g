@@ -15,6 +15,9 @@ Bonus for maths people:
 
 
 Tip: Press Alt+Z for automatic line return.
+
+
+# THIS CODE IS DEPRECATED
 """
 
 import torch
@@ -139,7 +142,6 @@ class _SGD:
 
                 # update
                 ...
-
 
 
 """
