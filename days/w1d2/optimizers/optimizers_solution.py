@@ -88,7 +88,7 @@ SGD:
 Please don't look back at the article. We will try to construct the formula ourself here.
 Below, read the method zero_grad. You can note that in PyTorch, to zero a gradient means assigning None.
 
-We will implement successively the pure SGD, the sgd with weight decay, and the SGD with momentum. Momentum, weight_decay, and update with learning rate must be modular operation. Warning: These modules must not mix on common lines of code.
+We will implement successively the pure SGD, the sgd with weight decay, and the SGD with momentum.
 
 Implement steps:
     - # update: Implement the most basic version of SGD possible
