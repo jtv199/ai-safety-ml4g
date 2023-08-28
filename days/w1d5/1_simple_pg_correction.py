@@ -58,8 +58,7 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
     # make function to compute action distribution
     # What is the shape of obs?
     @typechecked
-    def get_policy(obs: TensorType[..., obs_dim]):
-        # Warning: obs has not always the same shape.
+    def get_policy(obs: TensorType["b", obs_dim]):
         logits = logits_net(obs)
         return Categorical(logits=logits)
 
@@ -67,16 +66,16 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
     # What is the shape of obs?
     @typechecked
     def get_action(obs: TensorType[obs_dim]) -> int:
-        return get_policy(obs).sample().item()
+        return get_policy(obs.unsquezze()).sample().item()
 
     # make loss function whose gradient, for the right data, is policy gradient
     # What does the weights parameter represents here?
     # What is the shape of obs?
     # Answer: b here is the sum of the len of each episode.
     @typechecked
-    def compute_loss(obs: TensorType["b", obs_dim], act: TensorType["b"], weights: TensorType["b"]):
-        logp : TensorType["b"] = get_policy(obs).log_prob(act)
-        return -(logp * weights).mean()
+    def compute_loss(obs: TensorType["b", obs_dim], acts: TensorType["b"], rewards: TensorType["b"]):
+        logp : TensorType["b"] = get_policy(obs).log_prob(acts)
+        return -(logp * rewards).mean()
 
     # make optimizer
     optimizer = Adam(logits_net.parameters(), lr=lr)
@@ -91,7 +90,7 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
         batch_lens = []         # for measuring episode lengths
 
         # reset episode-specific variables
-        obs = env.reset()       # first obs comes from starting distribution 
+        obs = env.reset()       # first obs comes from starting distribution
         done = False            # signal from environment that episode is over
         ep_rews = []            # list for rewards accrued throughout ep
 
@@ -139,8 +138,8 @@ def train(env_name='CartPole-v0', hidden_sizes=[32], lr=1e-2,
         # take a single policy gradient update step
         optimizer.zero_grad()
         batch_loss = compute_loss(obs=torch.as_tensor(batch_obs, dtype=torch.float32),
-                                  act=torch.as_tensor(batch_acts, dtype=torch.int32),
-                                  weights=torch.as_tensor(batch_weights, dtype=torch.float32)
+                                  acts=torch.as_tensor(batch_acts, dtype=torch.int32),
+                                  rewards=torch.as_tensor(batch_weights, dtype=torch.float32)
                                   )
         batch_loss.backward()
         optimizer.step()
