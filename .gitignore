@@ -19,3 +19,5 @@ runs/**
 mlab/data/**
 mlab/w1d2_cifar10_train/**
 days/w1d2/.DS_Store
+*.pth
+*.zip
